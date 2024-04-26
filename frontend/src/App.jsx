@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import TopBar from './components/TopBar';
 import SideMenu from './components/SideMenu';
-// import HomePage from './pages/HomePage';
+import HomePage from './pages/HomePage';
 
 function App() {
     const [isMenuOpen, setMenuOpen] = useState(false);
@@ -12,7 +12,7 @@ function App() {
         <div className="App">
             <TopBar toggleMenu={toggleMenu} />
             <SideMenu isOpen={isMenuOpen} toggleMenu={toggleMenu} />
-            {/* <HomePage/> */}
+            <HomePage/>
         </div>
     );
 }

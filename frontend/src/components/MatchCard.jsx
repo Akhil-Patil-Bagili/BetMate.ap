@@ -1,11 +1,16 @@
 function MatchCard({ match }) {
   return (
-    <div className="bg-white p-4 rounded-lg shadow hover:shadow-md transition duration-300">
-      <h2 className="text-lg font-bold text-gray-700">{match.teams}</h2>
-      <p className="text-gray-500">{match.location}, {match.time}, {match.date}</p>
-      <button className="mt-4 bg-blue-500 text-white py-2 px-4 rounded hover:bg-blue-600 transition duration-300 block mx-auto">
-        Bet
-      </button>
+    <div className="w-12/12 bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 overflow-hidden my-4">
+      <div className="p-5">
+        <h2 className="mb-1 text-2xl font-bold tracking-tight text-gray-900 dark:text-white">{match.teams}</h2>
+        <p className="font-normal text-gray-700 dark:text-gray-400 mb-4">{match.location}, {match.time}, {match.date}</p>
+        <button className="inline-flex items-center px-3 py-3 text-sm font-medium text-center text-white bg-blue-700 rounded-lg hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+          Place Bet
+          <svg className="rtl:rotate-180 w-3.5 h-3.5 ml-2" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 14 10">
+            <path stroke="currentColor" stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M1 5h12m0 0L9 1m4 4L9 9"/>
+          </svg>
+        </button>
+      </div>
     </div>
   );
 }

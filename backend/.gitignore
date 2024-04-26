@@ -1,0 +1,19 @@
+# Dependency directories
+node_modules/
+dist/
+coverage/
+
+# Environment variables
+.env
+.env.local
+.env.test
+
+# Prisma generated files
+prisma/.env
+prisma/.prisma
+prisma/migrations/
+prisma/schema.prisma
+
+# IDE files
+.idea/
+.vscode/

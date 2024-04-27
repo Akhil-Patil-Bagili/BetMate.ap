@@ -1,11 +1,14 @@
 // src/app.js
 const express = require('express');
+const cors = require('cors');
 const authRoutes = require('./routes/authRoutes');
 const matchRoutes = require('./routes/matchRoutes');
 const betRoutes = require('./routes/betRoutes');
 const friendRoutes = require('./routes/friendRoutes');
 
+
 const app = express();
+app.use(cors());
 
 app.use(express.json());
 app.use('/api/auth', authRoutes);

@@ -21,8 +21,8 @@ const AppBar = () => {
                 <Link to="/" className="hover:text-gray-400 text-gray-200 font-normal p-2">Home</Link>
                 <Link to="/about" className="hover:text-gray-400 text-gray-200 font-normal p-2">About</Link>
                 <Link to="/contact" className="hover:text-gray-400 text-gray-200 font-normal p-2">Contact</Link>
-                <Link to="/login" className="hover:text-gray-400 text-gray-200 font-normal p-2">Login</Link>
-                <Link to="/register" className="hover:text-gray-400 text-gray-200 font-normal p-2">Register</Link>
+                <Link to="/signin" className="hover:text-gray-400 text-gray-200 font-normal p-2">Login</Link>
+                <Link to="/signup" className="hover:text-gray-400 text-gray-200 font-normal p-2">Register</Link>
             </nav>
             {isOpen && <div className="fixed inset-0 bg-black opacity-50 md:hidden" onClick={() => setIsOpen(false)}></div>}
         </div>

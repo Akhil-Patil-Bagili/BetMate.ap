@@ -35,12 +35,12 @@ function TopBar({ toggleMenu }) {
                 <button onClick={toggleMenu} className="md:hidden p-2 mr-2">
                     <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 6h16M4 12h16m-7 6h7"></path></svg>
                 </button>
-                <a href="#home">
+                <a href="/">
                     <img src={logo} alt="Bet Mate Logo" className="h-12 w-auto hover:opacity-75"/>
                 </a>
             </div>
             <div className="flex-grow flex justify-end items-center space-x-6">
-                <a href="#home" className="hidden md:flex items-center hover:text-gray-300">
+                <a href="/" className="hidden md:flex items-center hover:text-gray-300">
                     <HiHome className="w-6 h-6" fill="currentColor" />
                 </a>
                 <a href="#notifications" className="flex items-center hover:text-gray-300">

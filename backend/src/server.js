@@ -1,7 +1,7 @@
 const app = require('./app'); // Make sure the path to app.js is correct
 
 // const cron = require('node-cron');
-const matchController = require('./controllers/matchController');
+// const matchController = require('./controllers/matchController');
 
 // cron.schedule('0 0 * * *', () => {  // This runs at midnight every day
 //     console.log('Fetching cricket matches...');
@@ -9,7 +9,7 @@ const matchController = require('./controllers/matchController');
 //   });
 
 // Add this in your server.js for a one-time manual trigger
-matchController.fetchMatches();
+// matchController.fetchMatches();
 
 // const { deleteAllData } = require('./prismaClient');
 

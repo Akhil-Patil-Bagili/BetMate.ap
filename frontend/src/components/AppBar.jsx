@@ -3,7 +3,7 @@ import { Link } from 'react-router-dom';
 import { HiMenu, HiX } from 'react-icons/hi';
 import logo from '../assets/logo.png';
 
-const AppBar = () => {
+export function AppBar(){
     const [isOpen, setIsOpen] = useState(false);
 
     return (

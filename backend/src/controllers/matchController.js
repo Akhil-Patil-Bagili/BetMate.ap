@@ -25,6 +25,9 @@ exports.fetchMatches = async () => {
       )
     ).filter(match => match);
 
+    console.log('Prisma client:', prisma);
+    console.log('Matches to be stored:', matches);
+
     if (matches.length > 0) {
       const result = await prisma.match.createMany({
         data: matches,

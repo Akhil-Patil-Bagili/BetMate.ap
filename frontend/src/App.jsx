@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
+import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import TopBar from './components/TopBar';
 import SideMenu from './components/SideMenu';
 import HomePage from './pages/HomePage';
@@ -8,25 +8,23 @@ import BetMates from './pages/BetMates';
 import CurrentBets from './pages/CurrentBets';
 import MyPoints from './pages/MyPoints';
 import LandingPage from './pages/LandingPage';
-import SignIn from './pages/SignIn';
-import SignUp from './pages/SignUp';
-import Footer from './components/Footer'; // Ensure you have a Footer component
+import {SignIn} from './pages/SignIn';
+import {SignUp} from './pages/SignUp';
+import { PrivateRoute } from './components/PrivateRoute';
 
 function App() {
     const [isMenuOpen, setMenuOpen] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(true); // State to track if user is logged in
+    const [isLoggedIn, setIsLoggedIn] = useState(false); // Assume user is not logged in initially
 
     const toggleMenu = () => setMenuOpen(!isMenuOpen);
 
-    // Function to handle login (this should be adjusted to your actual login logic)
     const handleLogin = () => {
         setIsLoggedIn(true);
     };
 
-    // Function to handle logout
     const handleLogout = () => {
-        setIsLoggedIn(false); // Update state to reflect logout
-        // Here you would typically clear tokens or other session data
+        setIsLoggedIn(false);
+        localStorage.removeItem("token"); // Clear token on logout
     };
 
     return (
@@ -34,24 +32,24 @@ function App() {
             <div className="App">
                 {isLoggedIn && (
                     <>
-                        <TopBar toggleMenu={toggleMenu} />
-                        <SideMenu isOpen={isMenuOpen} toggleMenu={toggleMenu} />
+                        <TopBar toggleMenu={toggleMenu} handleLogout={handleLogout} />
+                        <SideMenu isOpen={isMenuOpen} toggleMenu={toggleMenu} />    
                     </>
                 )}
                 <Routes>
-                    <Route path="/" element={!isLoggedIn ? <LandingPage /> : <HomePage />} />
-                    <Route path="/home" element={<HomePage />} />
-                    <Route path="/coin-flip" element={<CoinFlip />} />
-                    <Route path="/betmates" element={<BetMates />} />
-                    <Route path="/current-bets" element={<CurrentBets />} />
-                    <Route path="/my-points" element={<MyPoints />} />
+                    <Route path="/" element={!isLoggedIn ? <LandingPage /> : <Navigate to="/home" />} />
                     <Route path="/signin" element={<SignIn handleLogin={handleLogin} />} />
                     <Route path="/signup" element={<SignUp />} />
+                    <Route path="/home" element={<PrivateRoute isLoggedIn={isLoggedIn}><HomePage /></PrivateRoute>} />
+                    <Route path="/coin-flip" element={<PrivateRoute isLoggedIn={isLoggedIn}><CoinFlip /></PrivateRoute>} />
+                    <Route path="/betmates" element={<PrivateRoute isLoggedIn={isLoggedIn}><BetMates /></PrivateRoute>} />
+                    <Route path="/current-bets" element={<PrivateRoute isLoggedIn={isLoggedIn}><CurrentBets /></PrivateRoute>} />
+                    <Route path="/my-points" element={<PrivateRoute isLoggedIn={isLoggedIn}><MyPoints /></PrivateRoute>} />
                 </Routes>
-                {/* {isLoggedIn && <Footer />} */}
             </div>
         </Router>
     );
 }
+
 
 export default App;

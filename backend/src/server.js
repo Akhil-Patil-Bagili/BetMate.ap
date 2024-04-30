@@ -1,3 +1,4 @@
+require('dotenv').config();
 const app = require('./app'); // Make sure the path to app.js is correct
 
 // const cron = require('node-cron');

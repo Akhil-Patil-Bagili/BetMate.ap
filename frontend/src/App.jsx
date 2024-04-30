@@ -1,5 +1,7 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
+import { AuthProvider, useAuth } from './context/AuthContext';
+import axios from 'axios';
 import TopBar from './components/TopBar';
 import SideMenu from './components/SideMenu';
 import HomePage from './pages/HomePage';
@@ -10,46 +12,62 @@ import MyPoints from './pages/MyPoints';
 import LandingPage from './pages/LandingPage';
 import {SignIn} from './pages/SignIn';
 import {SignUp} from './pages/SignUp';
-import { PrivateRoute } from './components/PrivateRoute';
+import { API_ENDPOINTS } from './apiConfig';
+
+function AppWrapper() {
+    return (
+        <AuthProvider>
+            <App />
+        </AuthProvider>
+    );
+}
 
 function App() {
+    const { user, setUser } = useAuth();
     const [isMenuOpen, setMenuOpen] = useState(false);
-    const [isLoggedIn, setIsLoggedIn] = useState(false); // Assume user is not logged in initially
+    const [isLoading, setIsLoading] = useState(true);
 
     const toggleMenu = () => setMenuOpen(!isMenuOpen);
 
-    const handleLogin = () => {
-        setIsLoggedIn(true);
-    };
+    useEffect(() => {
+        axios.get(API_ENDPOINTS.validate, { withCredentials: true })
+            .then(response => {
+                console.log('Validation successful, user:', response.data);
+                setUser(response.data.user);  // Update according to your actual response structure
+                setIsLoading(false);
+            })
+            .catch(error => {
+                console.error('Authentication validation failed:', error);
+                setIsLoading(false);
+            });
+    }, [setUser]);
 
-    const handleLogout = () => {
-        setIsLoggedIn(false);
-        localStorage.removeItem("token"); // Clear token on logout
-    };
+    if (isLoading) {
+        return <div>Loading...</div>;
+    }
 
     return (
         <Router>
             <div className="App">
-                {isLoggedIn && (
+                {user && (
                     <>
-                        <TopBar toggleMenu={toggleMenu} handleLogout={handleLogout} />
-                        <SideMenu isOpen={isMenuOpen} toggleMenu={toggleMenu} />    
+                        <TopBar toggleMenu={toggleMenu} />
+                        <SideMenu isOpen={isMenuOpen} toggleMenu={toggleMenu} />
                     </>
                 )}
                 <Routes>
-                    <Route path="/" element={!isLoggedIn ? <LandingPage /> : <Navigate to="/home" />} />
-                    <Route path="/signin" element={<SignIn handleLogin={handleLogin} />} />
-                    <Route path="/signup" element={<SignUp />} />
-                    <Route path="/home" element={<PrivateRoute isLoggedIn={isLoggedIn}><HomePage /></PrivateRoute>} />
-                    <Route path="/coin-flip" element={<PrivateRoute isLoggedIn={isLoggedIn}><CoinFlip /></PrivateRoute>} />
-                    <Route path="/betmates" element={<PrivateRoute isLoggedIn={isLoggedIn}><BetMates /></PrivateRoute>} />
-                    <Route path="/current-bets" element={<PrivateRoute isLoggedIn={isLoggedIn}><CurrentBets /></PrivateRoute>} />
-                    <Route path="/my-points" element={<PrivateRoute isLoggedIn={isLoggedIn}><MyPoints /></PrivateRoute>} />
+                    <Route path="/" element={user ? <Navigate to="/home" /> : <LandingPage />} />
+                    <Route path="/signin" element={user ? <Navigate to="/home" /> : <SignIn />} />
+                    <Route path="/signup" element={user ? <Navigate to="/home" /> : <SignUp />} />
+                    <Route path="/home" element={user ? <HomePage /> : <Navigate to="/signin" />} />
+                    <Route path="/coin-flip" element={user ? <CoinFlip /> : <Navigate to="/signin" />} />
+                    <Route path="/betmates" element={user ? <BetMates /> : <Navigate to="/signin" />} />
+                    <Route path="/current-bets" element={user ? <CurrentBets /> : <Navigate to="/signin" />} />
+                    <Route path="/my-points" element={user ? <MyPoints /> : <Navigate to="/signin" />} />
                 </Routes>
             </div>
         </Router>
     );
 }
 
-
-export default App;
+export default AppWrapper;

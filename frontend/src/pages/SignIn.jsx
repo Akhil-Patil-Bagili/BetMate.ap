@@ -1,3 +1,4 @@
+import { useAuth } from '../context/AuthContext';
 import { BottomWarning } from "../components/BottomWarning"
 import { LongButton } from "../components/LongButton"
 import { Heading } from "../components/Heading"
@@ -9,23 +10,21 @@ import { useNavigate } from "react-router-dom"
 import AppBar from "../components/AppBar";
 import { API_ENDPOINTS } from "../apiConfig"
 
-export const SignIn = ({handleLogin}) => {
+export const SignIn = () => {
 
   const [username, setUsername] = useState("");
   const [password, setPassword] = useState("");
+  const { setUser } = useAuth();
   const navigate = useNavigate();
 
   const handleSubmit = async () => {
-    try{
-      const response = await axios.post(API_ENDPOINTS.login,{
-        username,
-        password
-      })
-      localStorage.setItem("token", response.data.access_token)
-      handleLogin();
-      navigate("/home")
-    }catch (error) {
-        console.error("Login failed:", error);
+    try {
+        await axios.post(API_ENDPOINTS.login, { username, password }, { withCredentials: true });
+        setUser(username);
+        navigate("/home");
+    } catch (error) {
+        console.error("Login failed:", error.response.data.message);
+        alert("Login failed: " + error.response.data.message);
     }
 };
     

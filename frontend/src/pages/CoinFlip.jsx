@@ -1,12 +1,24 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { TbCoinRupeeFilled } from 'react-icons/tb';
+import axios from 'axios';
+import { API_ENDPOINTS } from '../apiConfig';
+import { useAuth } from '../context/AuthContext';
 
 function CoinFlip() {
     const [selectedOption, setSelectedOption] = useState('');
     const [betMate, setBetMate] = useState(null);
     const [result, setResult] = useState('');
+    const [searchResults, setSearchResults] = useState([]);
     const [flipping, setFlipping] = useState(false);
     const [showModal, setShowModal] = useState(false);
+    const [searchTerm, setSearchTerm] = useState('');
+    const {user} = useAuth();
+    const searchRef = useRef(null);
+
+    useEffect(() => {
+        document.addEventListener('mousedown', handleClickOutside);
+        return () => document.removeEventListener('mousedown', handleClickOutside);
+    }, [user]);
 
     const flipCoin = () => {
         setFlipping(true);
@@ -16,16 +28,42 @@ function CoinFlip() {
             setResult(randomOutcome);
             setFlipping(false);
             setShowModal(true);
-        }, 5000);
+        }, 2000);
     };
 
-    const selectBetMate = (name) => {
-        setBetMate({
-            name: name,
-            image: '/default-profile.jpg' // Placeholder for default profile picture
-        });
+    const selectBetMate = (mate) => {
+        setBetMate(mate);
         setSelectedOption('');
         setResult('');
+        setSearchResults([]);
+    };
+
+    const handleSearch = async (e) => {
+        setSearchTerm(e.target.value);
+        if (e.target.value.length >= 1) {
+            try {
+                const response = await axios.get(`${API_ENDPOINTS.friends}/list/${user.userId}`, {
+                    params: { query: e.target.value },
+                    withCredentials: true 
+                });
+                setSearchResults(response.data.map(user => ({
+                    id: user.id,
+                    firstName: user.firstName,
+                    lastName: user.lastName
+                })));
+            } catch (error) {
+                console.error('Error fetching search results:', error);
+                setSearchResults([]);
+            }
+        } else {
+            setSearchResults([]);
+        }
+    };
+
+    const handleClickOutside = (event) => {
+        if (searchRef.current && !searchRef.current.contains(event.target)) {
+            setSearchResults([]);
+        }
     };
 
     return (
@@ -33,13 +71,27 @@ function CoinFlip() {
             <div className="max-w-4xl mx-auto shadow-lg p-6 bg-white rounded-lg">
                 <div className="mb-4 text-center">
                     <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-1">Choose Your Betmate First</h1>
-                    <input type="text" placeholder="Search for your Betmate..." className="text-gray-800 p-3 w-full rounded-lg border border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition"
-                           onBlur={() => selectBetMate("John Doe")} />
+                    <input
+                        type="text"
+                        value={searchTerm}
+                        onChange={handleSearch}
+                        placeholder="Search for your Betmate..."
+                        className="text-gray-800 p-3 w-full rounded-lg border border-gray-400 focus:border-gray-500 focus:ring-1 focus:ring-gray-500 transition"
+                    />
+                     <div ref={searchRef}>
+                        {searchResults.length > 0 && (
+                            <ul className="absolute w-72 mt-2 bg-white shadow-lg max-h-60 overflow-auto border border-gray-300 rounded-lg">
+                                {searchResults.map(mate => (
+                                    <li key={mate.id} className="flex justify-between items-center p-3 hover:bg-gray-100 cursor-pointer" onClick={() => selectBetMate(mate)}>
+                                        <span>{mate.firstName} {mate.lastName} </span>
+                                    </li>
+                                ))}
+                            </ul>
+                        )}
+                    </div>
                     {betMate && (
                         <div className="mt-6 flex items-center justify-center gap-8 text-gray-800">
-                            <img src={betMate.image} alt="Bet Mate" className="w-20 h-20 rounded-full border-4 border-gray-300 shadow-lg"/>
-                            <span className="text-2xl font-bold">{betMate.name} <span className="text-gray-500 mx-2">VS</span > <span className="text-2xl font-bold">You</span></span>
-                            <img src="/default-profile.jpg" alt="Your Profile" className="w-20 h-20 rounded-full border-4 border-gray-300 shadow-lg"/>
+                            <span className="text-2xl font-bold">{betMate.firstName}<span className="text-gray-500 mx-2">VS</span> You</span>
                         </div>
                     )}
                 </div>

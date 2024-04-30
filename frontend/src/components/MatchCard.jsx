@@ -1,5 +1,5 @@
 import { format } from 'date-fns';
-import { useNavigate } from 'react-router-dom'; // Import useNavigate
+import { useNavigate } from 'react-router-dom'; 
 import CSKLogo from '../assets/teamLogos/CSK.png';
 import DCLogo from '../assets/teamLogos/DC.png';
 import GTLogo from '../assets/teamLogos/GT.png';
@@ -11,7 +11,6 @@ import RCBLogo from '../assets/teamLogos/RCB.png';
 import RRLogo from '../assets/teamLogos/RR.png';
 import SRHLogo from '../assets/teamLogos/SRH.png';
 
-// Mapping of team codes to logos
 const teamLogos = {
   CSK: CSKLogo,
   DC: DCLogo,
@@ -26,22 +25,19 @@ const teamLogos = {
 };
 
 function MatchCard({ match }) {
-  const navigate = useNavigate(); // Hook to handle navigation
+  const navigate = useNavigate(); 
   const matchDate = new Date(match.date);
   const dateString = format(matchDate, 'EEE, MMM d, yyyy, h:mm a') + ' Local Time';
 
-  // Function to handle navigation
   const handleFlipCoin = () => {
     navigate('/coin-flip');
   };
 
   return (
     <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 overflow-hidden my-4">
-      {/* Date and Time */}
       <div className="text-center font-medium text-sm text-gray-800 px-5 pt-5">
         {dateString}
       </div>
-      {/* Main content: Team Logos and Names */}
       <div className="flex justify-center items-center space-x-12 py-5">
         <img src={teamLogos[match.team1] || "https://via.placeholder.com/150x150?text=Team1"} alt={match.team1}
              className="h-20 w-20 md:h-28 md:w-28 rounded-full object-contain"/>
@@ -53,7 +49,6 @@ function MatchCard({ match }) {
         <img src={teamLogos[match.team2] || "https://via.placeholder.com/150x150?text=Team2"} alt={match.team2}
              className="h-20 w-20 md:h-28 md:w-28 rounded-full object-contain"/>
       </div>
-      {/* Location and Action Button */}
       <div className="px-5 pb-5 text-center md:text-center">
         <p className="font-normal text-gray-700 dark:text-gray-400 pb-2">{match.location}</p>
         <button onClick={handleFlipCoin} className="mt-2 inline-flex items-center px-3 py-2 text-sm font-medium text-center text-white bg-gray-700 rounded-lg hover:bg-gray-800 focus:ring-4 focus:outline-none focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">

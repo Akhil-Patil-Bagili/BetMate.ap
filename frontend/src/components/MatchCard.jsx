@@ -1,5 +1,6 @@
 import { format } from 'date-fns';
 import { useNavigate } from 'react-router-dom'; 
+import { useMatch } from '../context/MatchContext';
 import CSKLogo from '../assets/teamLogos/CSK.png';
 import DCLogo from '../assets/teamLogos/DC.png';
 import GTLogo from '../assets/teamLogos/GT.png';
@@ -26,10 +27,12 @@ const teamLogos = {
 
 function MatchCard({ match }) {
   const navigate = useNavigate(); 
+  const { setMatch } = useMatch();
   const matchDate = new Date(match.date);
   const dateString = format(matchDate, 'EEE, MMM d, yyyy, h:mm a') + ' Local Time';
 
   const handleFlipCoin = () => {
+    setMatch(match);
     navigate('/coin-flip');
   };
 

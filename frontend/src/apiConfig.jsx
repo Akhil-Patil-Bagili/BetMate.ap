@@ -7,5 +7,6 @@ export const API_ENDPOINTS = {
  matches: `${API_BASE_URL}/api/matches`,
  users: `${API_BASE_URL}/api/users`,
  friends: `${API_BASE_URL}/api/friends`,
+ bets: `${API_BASE_URL}/api/bets`,
  logout: `${API_BASE_URL}/api/auth/logout`
 };

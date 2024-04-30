@@ -1,10 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { TbCoinRupeeFilled } from 'react-icons/tb';
 import axios from 'axios';
+import { useMatch } from '../context/MatchContext';
 import { API_ENDPOINTS } from '../apiConfig';
 import { useAuth } from '../context/AuthContext';
 
 function CoinFlip() {
+    const { currentMatch } = useMatch();
     const [selectedOption, setSelectedOption] = useState('');
     const [betMate, setBetMate] = useState(null);
     const [result, setResult] = useState('');
@@ -66,6 +68,27 @@ function CoinFlip() {
         }
     };
 
+    const placeBet = async (teamChoice) => {
+        if (!betMate || !currentMatch) return;
+    
+        try {
+            const response = await axios.post(`${API_ENDPOINTS.bets}/placeBet`, {
+                userId: user.userId,
+                opponentId: betMate.id, 
+                matchId: currentMatch.id,
+                choice: teamChoice,
+            }, {
+                withCredentials: true
+            });
+            console.log('Bet placed successfully:', response.data);
+            setShowModal(false);
+        } catch (error) {
+            console.error('Failed to place bet:', error);
+            alert('Failed to place bet. Please try again.');
+        }
+    };
+    
+
     return (
         <div className="pt-20 lg:pl-64 p-8 bg-gray-100 min-h-screen">
             <div className="max-w-4xl mx-auto shadow-lg p-6 bg-white rounded-lg">
@@ -125,8 +148,8 @@ function CoinFlip() {
                             {result === selectedOption && (
                                 <div className="mt-4">
                                     <p className="mb-2">Choose your team now:</p>
-                                    <button className="mx-2 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 transition-colors">Team1</button>
-                                    <button className="mx-2 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 transition-colors">Team2</button>
+                                    <button onClick={() => placeBet(currentMatch.team1)} className="mx-2 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 transition-colors">{currentMatch.team1}</button>
+                                    <button onClick={() => placeBet(currentMatch.team2)} className="mx-2 px-4 py-2 bg-gray-700 text-white rounded hover:bg-gray-800 transition-colors">{currentMatch.team2}</button>
                                     <button onClick={() => setShowModal(false)} className="mt-4 px-4 py-2 bg-red-500 text-white rounded hover:bg-red-600">Skip for now</button>
                                 </div>
                             )}

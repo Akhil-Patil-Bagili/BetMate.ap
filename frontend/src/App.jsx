@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { MatchProvider } from './context/MatchContext';
 import TopBar from './components/TopBar';
 import SideMenu from './components/SideMenu';
 import HomePage from './pages/HomePage';
@@ -15,7 +16,9 @@ import {SignUp} from './pages/SignUp';
 function AppWrapper() {
     return (
         <AuthProvider>
-            <App />
+            <MatchProvider>
+                <App />
+            </MatchProvider>
         </AuthProvider>
     );
 }

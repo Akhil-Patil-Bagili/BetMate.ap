@@ -14,17 +14,39 @@ export const AuthProvider = ({ children }) => {
         const verifyUser = async () => {
             try {
                 const response = await axios.get(API_ENDPOINTS.validate, { withCredentials: true });
-                setUser(response.data.userId);
+                if (response.data && response.data.userId) {
+                    setUser({
+                        userId: response.data.userId,
+                        firstName: response.data.firstName, // Assuming these are part of the response
+                        lastName: response.data.lastName
+                    });
+                } else {
+                    setUser(null);
+                }
             } catch (error) {
+                console.error("Error during user validation:", error);
                 setUser(null);
             }
             setLoading(false);
         };
+
         verifyUser();
+
+        return () => {
+        };
     }, []);
 
+    const logout = async () => {
+        try {
+            await axios.get(API_ENDPOINTS.logout, { withCredentials: true });
+            setUser(null); // Clears the user upon logout
+        } catch (error) {
+            console.error("Logout failed:", error);
+        }
+    };
+
     return (
-        <AuthContext.Provider value={{ user, setUser, loading }}>
+        <AuthContext.Provider value={{ user, setUser, loading, logout }}>
             {!loading && children}
         </AuthContext.Provider>
     );

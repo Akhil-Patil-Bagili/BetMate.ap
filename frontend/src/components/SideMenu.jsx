@@ -1,12 +1,27 @@
 import { HiOutlineLogout } from "react-icons/hi";
 import {Link} from "react-router-dom"
+import axios from "axios";
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from "react-router-dom";
+import { API_ENDPOINTS } from "../apiConfig";
 
 function SideMenu({ isOpen, toggleMenu }) {
   const topBarHeight = '64px'; 
+  const navigate = useNavigate();
+  const { setUser } = useAuth();
 
-  const handleLogout = () => {
-    console.log("logged out"); 
-  }
+  const handleLogout = async () => {
+    try {
+      console.log("Attempting to logout...");
+      await axios.get(API_ENDPOINTS.logout);
+      setUser(null);
+      console.log("Logout successful, navigating to signin...");
+      navigate("/signin");
+    } catch (error) {
+      console.error("Logout failed:", error);
+    }
+  };
+  
 
   return (
     <div className={`bg-gray-700 text-white w-64 space-y-2 py-2 fixed inset-y-0 left-0 transform ${isOpen ? 'translate-x-0' : '-translate-x-full'} md:translate-x-0 md:fixed transition duration-300 ease-in-out h-full`}

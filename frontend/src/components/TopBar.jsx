@@ -2,10 +2,18 @@ import logo from "../assets/logo.png";
 import { HiHome, HiBell } from "react-icons/hi";
 import { useEffect, useRef, useState } from 'react';
 import { Link } from "react-router-dom";
+import { useAuth } from '../context/AuthContext';
+import { useNavigate } from "react-router-dom";
+import { API_ENDPOINTS } from "../apiConfig";
+import axios from "axios";
 
-function TopBar({ toggleMenu }) {
+function TopBar({ toggleMenu, user}) {
     const [isSubmenuOpen, setIsSubmenuOpen] = useState(false);
-    const submenuRef = useRef(); 
+    const navigate = useNavigate();
+    const { setUser } = useAuth();
+    const submenuRef = useRef();
+    console.log(user); 
+    const initials = user && user.firstName && user.lastName ? `${user.firstName[0]}${user.lastName[0]}` : "??";
 
     const toggleSubmenu = () => {
         setIsSubmenuOpen(!isSubmenuOpen);
@@ -29,6 +37,22 @@ function TopBar({ toggleMenu }) {
         };
     }, [isSubmenuOpen]);
 
+    const handleLogout = async () => {
+        try {
+          console.log("Attempting to logout...");
+          await axios.get(API_ENDPOINTS.logout);
+          setUser(null);
+          console.log("Logout successful, navigating to signin...");
+          navigate("/signin");
+        } catch (error) {
+          console.error("Logout failed:", error);
+        }
+      };
+
+      const handleProfile =() => {
+        console.log("profile clicked")
+      }
+
 
     return (
         <div className="bg-gray-800 text-white flex justify-between items-center px-4 py-2 fixed w-full z-50">
@@ -48,14 +72,16 @@ function TopBar({ toggleMenu }) {
                     <HiBell className="w-6 h-6" fill="currentColor" />
                 </Link>
                 <div className="relative">
-                    <button onClick={toggleSubmenu} className="block">
-                        <img src="/profile.jpg" alt="Profile" className="h-8 w-8 rounded-full hover:opacity-75" />
+                    <button onClick={toggleSubmenu} className="block bg-gray-100 text-black rounded-full w-9 h-9 flex justify-center items-center">
+                        {initials}
                     </button>
                     {isSubmenuOpen && (
                         <div className="absolute right-0 w-48 bg-gray-700 mt-2 py-2 rounded shadow-lg z-50">
-                            <Link to="#profile" className="block px-4 py-2 text-sm text-white hover:bg-gray-600">Profile</Link>
-                            <Link to="#logout" className="block px-4 py-2 text-sm text-white hover:bg-gray-600">Logout</Link>
-                        </div>
+                            <ul className="py-1">
+                                <li className="block px-4 py-2 text-sm text-white hover:bg-gray-600 cursor-pointer" onClick={handleProfile}>Profile</li>
+                                <li className="block px-4 py-2 text-sm text-white hover:bg-gray-600 cursor-pointer" onClick={handleLogout}>Logout</li>
+                            </ul>
+                        </div>  
                     )}
                 </div>
             </div>

@@ -1,7 +1,6 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { AuthProvider, useAuth } from './context/AuthContext';
-import axios from 'axios';
 import TopBar from './components/TopBar';
 import SideMenu from './components/SideMenu';
 import HomePage from './pages/HomePage';
@@ -12,7 +11,6 @@ import MyPoints from './pages/MyPoints';
 import LandingPage from './pages/LandingPage';
 import {SignIn} from './pages/SignIn';
 import {SignUp} from './pages/SignUp';
-import { API_ENDPOINTS } from './apiConfig';
 
 function AppWrapper() {
     return (
@@ -23,47 +21,36 @@ function AppWrapper() {
 }
 
 function App() {
-    const { user, setUser } = useAuth();
+    const { user } = useAuth();
     const [isMenuOpen, setMenuOpen] = useState(false);
-    const [isLoading, setIsLoading] = useState(true);
 
     const toggleMenu = () => setMenuOpen(!isMenuOpen);
 
-    useEffect(() => {
-        axios.get(API_ENDPOINTS.validate, { withCredentials: true })
-            .then(response => {
-                console.log('Validation successful, user:', response.data);
-                setUser(response.data.user);  // Update according to your actual response structure
-                setIsLoading(false);
-            })
-            .catch(error => {
-                console.error('Authentication validation failed:', error);
-                setIsLoading(false);
-            });
-    }, [setUser]);
-
-    if (isLoading) {
-        return <div>Loading...</div>;
+    if (!user) {
+        return (
+            <Router>
+                <Routes>
+                    <Route path="/" element={<LandingPage />} />
+                    <Route path="/signin" element={<SignIn />} />
+                    <Route path="/signup" element={<SignUp />} />
+                    <Route path="*" element={<Navigate replace to="/" />} />
+                </Routes>
+            </Router>
+        );
     }
 
     return (
         <Router>
             <div className="App">
-                {user && (
-                    <>
-                        <TopBar toggleMenu={toggleMenu} />
-                        <SideMenu isOpen={isMenuOpen} toggleMenu={toggleMenu} />
-                    </>
-                )}
+                <TopBar toggleMenu={toggleMenu} user={user} />
+                <SideMenu isOpen={isMenuOpen} toggleMenu={toggleMenu} user={user} />
                 <Routes>
-                    <Route path="/" element={user ? <Navigate to="/home" /> : <LandingPage />} />
-                    <Route path="/signin" element={user ? <Navigate to="/home" /> : <SignIn />} />
-                    <Route path="/signup" element={user ? <Navigate to="/home" /> : <SignUp />} />
-                    <Route path="/home" element={user ? <HomePage /> : <Navigate to="/signin" />} />
-                    <Route path="/coin-flip" element={user ? <CoinFlip /> : <Navigate to="/signin" />} />
-                    <Route path="/betmates" element={user ? <BetMates /> : <Navigate to="/signin" />} />
-                    <Route path="/current-bets" element={user ? <CurrentBets /> : <Navigate to="/signin" />} />
-                    <Route path="/my-points" element={user ? <MyPoints /> : <Navigate to="/signin" />} />
+                    <Route path="/" element={<Navigate replace to="/home" />} />
+                    <Route path="/home" element={<HomePage />} />
+                    <Route path="/coin-flip" element={<CoinFlip />} />
+                    <Route path="/betmates" element={<BetMates />} />
+                    <Route path="/current-bets" element={<CurrentBets />} />
+                    <Route path="/my-points" element={<MyPoints />} />
                 </Routes>
             </div>
         </Router>

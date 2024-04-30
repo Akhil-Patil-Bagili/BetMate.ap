@@ -23,7 +23,7 @@ function CurrentBets() {
   return (
     <div className="bg-gray-100 max-w-screen-xl mx-auto pt-16">
       <div className="container mx-auto px-2 lg:pl-64">
-        <h1 className="text-2xl font-bold text-gray-800 ml-4 mt-4 mb-4">Current Bets</h1>
+        <h1 className="text-2xl font-bold text-gray-800 ml-4 mt-4   mb-4">Current Bets</h1>
         <div className="grid grid-cols-1 gap-4 place-items-center md:place-items-start">
           {matches.map(match => (
             <CurrentBetsCard key={match.id} match={match} />

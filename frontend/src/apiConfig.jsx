@@ -4,5 +4,6 @@ export const API_ENDPOINTS = {
  register: `${API_BASE_URL}/api/auth/register`,
  login: `${API_BASE_URL}/api/auth/login`,
  validate: `${API_BASE_URL}/api/auth/validate`,
- matches: `${API_BASE_URL}/api/matches`
+ matches: `${API_BASE_URL}/api/matches`,
+ logout: `${API_BASE_URL}/api/auth/logout`
 };

@@ -5,6 +5,7 @@ const { validateToken } = require('../middleware/authMiddleware');
 
 
 router.post('/sendRequest', validateToken, friendController.sendFriendRequest);
+router.get('/pendingRequests', validateToken, friendController.getPendingRequests)
 router.put('/acceptRequest/:requestId', validateToken, friendController.acceptFriendRequest);
 router.put('/declineRequest/:requestId', validateToken, friendController.declineFriendRequest);
 router.get('/list/:userId', validateToken,friendController.listFriends);

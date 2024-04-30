@@ -1,12 +1,10 @@
 const prisma = require('../prismaClient');
-const { Prisma } = require('@prisma/client'); // Correctly import Prisma to access error types
+const { Prisma } = require('@prisma/client'); 
 
-// Send a friend request
 exports.sendFriendRequest = async (req, res) => {
     const { requesterId, addresseeId } = req.body;
     
     try {
-      // Check if both users exist
       const users = await prisma.user.findMany({
         where: {
           OR: [
@@ -16,12 +14,10 @@ exports.sendFriendRequest = async (req, res) => {
         }
       });
   
-      // If the number of users found is not 2, one or both IDs are invalid
       if (users.length !== 2) {
         return res.status(404).json({ message: "One or both users not found" });
       }
   
-      // Create friend request
       const friendRequest = await prisma.friendRequest.create({
         data: {
           requesterId,
@@ -35,8 +31,52 @@ exports.sendFriendRequest = async (req, res) => {
     }
 };
 
+exports.getPendingRequests = async (req, res) => {
+  const userId = parseInt(req.user.userId); 
+
+  try {
+    const pendingRequests = await prisma.friendRequest.findMany({
+      where: {
+          OR: [
+              { requesterId: userId, status: 'pending' },
+              { addresseeId: userId, status: 'pending' }
+          ],
+      },
+      include: {
+          requester: {
+              select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true
+              }
+          },
+          addressee: {
+              select: {
+                  id: true,
+                  firstName: true,
+                  lastName: true
+              }
+          }
+      }
+  });
+
+      const mappedRequests = pendingRequests.map(request => ({
+        id: request.id,
+        name: request.requesterId === userId ? 
+             `${request.addressee.firstName} ${request.addressee.lastName}` :
+             `${request.requester.firstName} ${request.requester.lastName}`,
+        status: request.status
+    }));
+
+      res.json(mappedRequests);
+  } catch (error) {
+      res.status(500).json({ message: "Failed to fetch pending requests", error: error.message });
+  }
+};
+
+
 exports.acceptFriendRequest = async (req, res) => {
-    const { requestId } = req.params; // Corrected line
+    const { requestId } = req.params; 
 
     try {
         const friendRequest = await prisma.friendRequest.update({
@@ -54,7 +94,6 @@ exports.acceptFriendRequest = async (req, res) => {
 };
 
 
-// Decline a friend request
 exports.declineFriendRequest = async (req, res) => {
     const { requestId } = req.params;
     try {
@@ -68,7 +107,6 @@ exports.declineFriendRequest = async (req, res) => {
     }
 };
 
-// List all friends
 exports.listFriends = async (req, res) => {
     const { userId } = req.params;
     try {

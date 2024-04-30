@@ -1,6 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HiOutlineUserAdd, HiCheck, HiX, HiOutlineClock } from 'react-icons/hi';
 import { AiOutlineCheckCircle } from 'react-icons/ai';
+import axios from 'axios';
+import { API_ENDPOINTS } from "../apiConfig"
+import { useAuth } from '../context/AuthContext'
 
 function BetMates() {
     const [betMates, setBetMates] = useState([]);
@@ -8,51 +11,113 @@ function BetMates() {
     const [searchResults, setSearchResults] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [requestSent, setRequestSent] = useState({});
-    const searchRef = useRef(null);  // Ref for the search results container
+    const searchRef = useRef(null);  
+    const { user } = useAuth();
 
     useEffect(() => {
-        setBetMates([
-            { id: 1, name: "John Doe", image: "/default-profile.jpg" },
-            { id: 2, name: "Jane Smith", image: "/default-profile.jpg" }
-        ]);
-        setPendingRequests([
-            { id: 5, name: "Charlie Puth", image: "/default-profile.jpg" }
-        ]);
-
-        // Event listener to close search results when clicking outside
-        const handleClickOutside = (event) => {
-            if (searchRef.current && !searchRef.current.contains(event.target)) {
-                setSearchResults([]);
-            }
-        };
-
+        fetchBetMates();
+        fetchPendingRequests();
         document.addEventListener('mousedown', handleClickOutside);
         return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, []);
+    }, [user]);
 
-    const handleSearch = (e) => {
+    const fetchBetMates = async () => {
+        if (!user) return;
+        try {
+            const response = await axios.get(`${API_ENDPOINTS.friends}/list/${user.userId}`, {
+                withCredentials: true
+            });
+            setBetMates(response.data.map(betMate => ({
+                id: betMate.id,
+                name: `${betMate.firstName} ${betMate.lastName}`,
+                username: betMate.username
+            })));
+        } catch (error) {
+            console.error('Failed to fetch betmates:', error);
+        }
+    };
+
+    const fetchPendingRequests = async () => {
+        if (!user) return;
+        try {
+            const response = await axios.get(`${API_ENDPOINTS.friends}/pendingRequests`, {
+                withCredentials: true
+            });
+            setPendingRequests(response.data);
+        } catch (error) {
+            console.error('Failed to fetch pending requests:', error);
+        }
+    };
+
+    const handleSearch = async (e) => {
         setSearchTerm(e.target.value);
-        if (e.target.value.length > 1) {
-            setSearchResults([
-                { id: 3, name: "Alice Johnson", image: "/default-profile.jpg" },
-                { id: 4, name: "Bob Brown", image: "/default-profile.jpg" }
-            ]);
+        if (e.target.value.length >= 1) {
+            try {
+                const response = await axios.get(`${API_ENDPOINTS.users}/search`, {
+                    params: { query: e.target.value },
+                    withCredentials: true 
+                });
+                setSearchResults(response.data.map(user => ({
+                    id: user.id,
+                    name: `${user.firstName} ${user.lastName}`,
+                })));
+            } catch (error) {
+                console.error('Error fetching search results:', error);
+                setSearchResults([]);
+            }
         } else {
             setSearchResults([]);
         }
     };
-
-    const addBetMate = (id) => {
-        setRequestSent(prev => ({ ...prev, [id]: true }));
-        setTimeout(() => setRequestSent(prev => ({ ...prev, [id]: true })), 5000); // Keep the check icon for 5 seconds
+    const addBetMate = async (addresseeId) => {
+        if (requestSent[addresseeId]) {
+            console.warn('Request already sent!');
+            return; 
+        }
+    
+        try {
+            const requesterId = user.userId; 
+            const response = await axios.post(API_ENDPOINTS.friends + '/sendRequest', {
+                requesterId,
+                addresseeId
+            }, { withCredentials: true });
+            setRequestSent(prev => ({ ...prev, [addresseeId]: true }));
+            console.log('Request sent successfully:', response.data);
+        } catch (error) {
+            console.error('Failed to send friend request:', error);
+            alert('Failed to send friend request. Please try again.');
+        }
     };
 
-    const handleApproval = (id) => {
-        console.log(`Approval for request ${id}`);
+    const handleApproval = async (requestId) => {
+        try {
+            await axios.put(`${API_ENDPOINTS.friends}/acceptRequest/${requestId}`, {}, { withCredentials: true });
+            console.log('Approval successful');
+            fetchBetMates();
+            fetchPendingRequests();
+        } catch (error) {
+            console.error('Failed to approve friend request:', error);
+            alert('Failed to approve friend request. Please try again.');
+        }
+    };
+    
+    const handleRejection = async (requestId) => {
+        try {
+            await axios.put(`${API_ENDPOINTS.friends}/declineRequest/${requestId}`, {}, { withCredentials: true });
+            console.log('Rejection successful');
+    
+            fetchPendingRequests();
+        } catch (error) {
+            console.error('Failed to decline friend request:', error);
+            alert('Failed to decline friend request. Please try again.');
+        }
     };
 
-    const handleRejection = (id) => {
-        console.log(`Rejection for request ${id}`);
+
+    const handleClickOutside = (event) => {
+        if (searchRef.current && !searchRef.current.contains(event.target)) {
+            setSearchResults([]);
+        }
     };
 
     return (
@@ -62,7 +127,7 @@ function BetMates() {
                     <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-3">Add Betmates</h1>
                     <input
                         type="text"
-                        placeholder="Search by username..."
+                        placeholder="Search for a betmate... "
                         value={searchTerm}
                         onChange={handleSearch}
                         className="w-full p-3 rounded-lg border border-gray-300 focus:ring-2 focus:ring-gray-500 transition"
@@ -70,11 +135,11 @@ function BetMates() {
                     <div ref={searchRef}>
                         {searchResults.length > 0 && (
                             <ul className="absolute w-72 mt-2 bg-white shadow-lg max-h-60 overflow-auto border border-gray-300 rounded-lg">
-                                {searchResults.map(user => (
-                                    <li key={user.id} className="flex justify-between items-center p-3 hover:bg-gray-100">
-                                        <span>{user.name}</span>
-                                        <button onClick={() => addBetMate(user.id)} className="text-gray-500 hover:text-gray-700">
-                                            {requestSent[user.id] ? <HiOutlineClock className="text-yellow-500 text-xl" /> : <HiOutlineUserAdd className="text-xl" />}
+                                {searchResults.map(addresseUser => (
+                                    <li key={addresseUser.id} className="flex justify-between items-center p-3 hover:bg-gray-100">
+                                        <span>{addresseUser.name}</span>
+                                        <button onClick={() => addBetMate(addresseUser.id)} className="text-gray-500 hover:text-gray-700">
+                                            {requestSent[addresseUser.id] ? <HiOutlineClock className="text-yellow-500 text-xl" /> : <HiOutlineUserAdd className="text-xl" />}
                                         </button>
                                     </li>
                                 ))}
@@ -87,7 +152,6 @@ function BetMates() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
                     {pendingRequests.map(request => (
                         <div key={request.id} className="flex items-center p-4 bg-gray-50 rounded-lg shadow">
-                            <img src={request.image} alt={request.name} className="w-12 h-12 rounded-full mr-3"/>
                             <div className="flex-grow">
                                 <h5 className="font-semibold">{request.name}</h5>
                             </div>
@@ -103,7 +167,6 @@ function BetMates() {
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4 mt-6">
                     {betMates.map(betMate => (
                         <div key={betMate.id} className="flex items-center p-4 bg-gray-50 rounded-lg shadow">
-                            <img src={betMate.image} alt={betMate.name} className="w-12 h-12 rounded-full mr-3"/>
                             <div className="flex-grow">
                                 <h5 className="font-semibold">{betMate.name}</h5>
                             </div>

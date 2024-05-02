@@ -23,6 +23,10 @@ function CoinFlip() {
     }, [user]);
 
     const flipCoin = () => {
+        if (!currentMatch) {
+            alert('No match selected. Please select a match first.');
+            return;
+        }
         setFlipping(true);
         setTimeout(() => {
             const outcomes = ['Heads', 'Tails'];
@@ -69,7 +73,11 @@ function CoinFlip() {
     };
 
     const placeBet = async (teamChoice) => {
-        if (!betMate || !currentMatch) return;
+        if (!betMate || !currentMatch)
+        {
+            alert('Please select a bet mate and a match first.');
+            return;
+        }
     
         try {
             const response = await axios.post(`${API_ENDPOINTS.bets}/placeBet`, {

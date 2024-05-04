@@ -21,7 +21,9 @@
           matchDescription: match.matchInfo.matchDesc,
           location: `${match.matchInfo.venueInfo.ground}, ${match.matchInfo.venueInfo.city}`,
           matchType: match.matchInfo.matchFormat,
-          seriesName: match.matchInfo.seriesName
+          seriesName: match.matchInfo.seriesName,
+          state: match.matchInfo.state,
+          status: match.matchInfo.status
         })) : [];
       }).filter(match => match);
   

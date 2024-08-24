@@ -37,7 +37,7 @@ function MatchCard({ match }) {
   };
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 overflow-hidden my-4">
+    <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-lg shadow overflow-hidden my-4">
       <div className="text-center font-medium text-sm text-gray-800 px-5 pt-5">
         {dateString}
       </div>

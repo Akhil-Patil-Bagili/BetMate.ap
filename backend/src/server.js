@@ -1,16 +1,16 @@
 require('dotenv').config();
 const app = require('./app'); // Make sure the path to app.js is correct
 
+// const matchController = require('./controllers/matchController');
+// matchController.fetchMatches();
+
 // const cron = require('node-cron');
-const matchController = require('./controllers/matchController');
 
 // cron.schedule('0 0 * * *', () => {  // This runs at midnight every day
 //     console.log('Fetching cricket matches...');
 //     matchController.fetchMatches();
 //   });
 
-// Add this in your server.js for a one-time manual trigger
-matchController.fetchMatches();
 
 // const { deleteAllData } = require('./prismaClient');
 

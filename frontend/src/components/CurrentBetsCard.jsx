@@ -31,7 +31,7 @@ function CurrentBetsCard({ bet }) {
   const dateString = format(matchDate, 'EEE, MMM d, yyyy, h:mm a') + ' Local Time';
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-lg shadow dark:bg-gray-800 dark:border-gray-700 overflow-hidden my-4">
+    <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-lg shadow overflow-hidden my-4">
       {/* Date and Time */}
       <div className="text-center font-medium text-sm text-gray-800 px-5 pt-5">
         {dateString}
@@ -40,9 +40,9 @@ function CurrentBetsCard({ bet }) {
       <div className="flex justify-center items-center space-x-12 py-5">
         <img src={teamLogos[bet.match.team1]} alt={bet.match.team1} className="h-20 w-20 md:h-28 md:w-28 rounded-full object-contain"/>
         <div className="flex flex-col items-center">
-          <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white text-center">{bet.match.team1} ({user.firstName})</h2>
+          <h2 className="text-xl md:text-3xl font-bold text-gray-900  text-center">{bet.choice} ({user.firstName})</h2>
           <span className="text-2xl md:text-3xl font-bold text-gray-500 text-center">VS</span>
-          <h2 className="text-xl md:text-3xl font-bold text-gray-900 dark:text-white text-center">{bet.match.team2} ({bet.opponent?.firstName || 'Waiting'})</h2>
+          <h2 className="text-xl md:text-3xl font-bold text-gray-900 text-center">{bet.opponentChoice} ({bet.opponent?.firstName || 'Waiting'})</h2>
         </div>
         <img src={teamLogos[bet.match.team2]} alt={bet.match.team2} className="h-20 w-20 md:h-28 md:w-28 rounded-full object-contain"/>
       </div>

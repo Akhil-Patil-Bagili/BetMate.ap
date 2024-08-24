@@ -2,10 +2,12 @@ import { useState, useEffect } from "react";
 import MatchCard from "../components/MatchCard";
 import axios from "axios";
 import { API_ENDPOINTS } from "../apiConfig";
+import { useAuth } from "../context/AuthContext";
 
 function HomePage() {
+  const { user } = useAuth(); // Assuming you have a user object from an AuthContext
   const [matches, setMatches] = useState([]);
-  const [userPoints, setUserPoints] = useState(10); // Example user points
+  const [userPoints, setUserPoints] = useState(0); // Initialize userPoints to 0
 
   useEffect(() => {
     const fetchMatches = async () => {
@@ -13,16 +15,29 @@ function HomePage() {
         const matchesResponse = await axios.get(API_ENDPOINTS.matches);
         setMatches(matchesResponse.data);
       } catch (error) {
-        console.error("Error fetching data:", error);
+        console.error("Error fetching matches:", error);
+      }
+    };
+
+    const fetchUserPoints = async () => {
+      try {
+        const userResponse = await axios.get(`${API_ENDPOINTS.users}/${user.userId}`, {
+          withCredentials: true
+        });
+        setUserPoints(userResponse.data.score);
+      } catch (error) {
+        console.error("Error fetching user points:", error);
+        setUserPoints(0); // Fallback to 0 on error
       }
     };
 
     fetchMatches();
-  }, []);
+    fetchUserPoints();
+  }, [user.userId]);
 
   const pointsMessage = userPoints >= 0 
     ? `Congrats! You are leading by ${userPoints} points!`
-    : `Oops, you're trailing by ${Math.abs(userPoints)} points. Time for a comeback!`;
+    : `OOPS, you're trailing by ${Math.abs(userPoints)} points. Time for a comeback!`;
 
   return (
     <div className="bg-gray-100 max-w-screen-xl mx-auto pt-16">

@@ -1,34 +1,73 @@
 import React, { useState, useEffect, useRef } from 'react';
+import axios from 'axios';
+import { useAuth } from '../context/AuthContext';
+import { API_ENDPOINTS } from '../apiConfig';
 
 function MyPoints() {
+  const { user } = useAuth();
   const [betMates, setBetMates] = useState([]);
   const [selectedBetMate, setSelectedBetMate] = useState(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [userPoints, setUserPoints] = useState(0);
+  const [searchResults, setSearchResults] = useState([]);
+  const [betDetails, setBetDetails] = useState([]); // State to hold bet details
   const dropdownRef = useRef(null);
 
   useEffect(() => {
-    setBetMates([
-      { id: 1, name: "John Doe", image: "/default-profile.jpg" },
-      { id: 2, name: "Jane Smith", image: "/default-profile.jpg" }
-    ]);
-
-    const handleClickOutside = (event) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
-        setSearchTerm('');
-      }
-    };
-
     document.addEventListener('mousedown', handleClickOutside);
     return () => document.removeEventListener('mousedown', handleClickOutside);
   }, []);
 
-  const handleSelectBetMate = (betMate) => {
-    event.stopPropagation(); // Stop the event from propagating to avoid unwanted closing
-    console.log("Betmate selected:", betMate.name);
+  const handleClickOutside = (event) => {
+    if (dropdownRef.current && !dropdownRef.current.contains(event.target)) {
+      setSearchResults([]);
+    }
+  };
+
+  const handleSearch = async (e) => {
+    setSearchTerm(e.target.value);
+    if (e.target.value.length >= 1) {
+      try {
+        const response = await axios.get(`${API_ENDPOINTS.friends}/list/${user.userId}`, {
+          params: { query: e.target.value },
+          withCredentials: true 
+        });
+        setSearchResults(response.data.map(user => ({
+          id: user.id,
+          firstName: user.firstName,
+          lastName: user.lastName
+        })));
+      } catch (error) {
+        console.error('Error fetching search results:', error);
+        setSearchResults([]);
+      }
+    } else {
+      setSearchResults([]);
+    }
+  };
+
+  const handleSelectBetMate = async (betMate) => {
+    console.log("Betmate selected:", betMate.firstName, betMate.lastName);
     setSelectedBetMate(betMate);
-    setSearchTerm(betMate.name);
-    setUserPoints(Math.floor(Math.random() * 20) - 10); // Simulate random points calculation
+    setSearchTerm(`${betMate.firstName} ${betMate.lastName}`);
+    try {
+      // Fetch the user's score from the backend
+      const userResponse = await axios.get(`${API_ENDPOINTS.users}/${user.userId}`, {
+        withCredentials: true
+      });
+      setUserPoints(userResponse.data.score);
+  
+      // Fetch bets for the user
+      const betResponse = await axios.get(`${API_ENDPOINTS.bets}/user/${user.userId}`, {
+        withCredentials: true
+      });
+      setBetDetails(betResponse.data); // Set the fetched bet details
+    } catch (error) {
+      console.error('Error fetching user points or bet details:', error);
+      setUserPoints(0);
+      setBetDetails([]); // Clear the bet details on error
+    }
+    setSearchResults([]);
   };
 
   return (
@@ -44,14 +83,14 @@ function MyPoints() {
               type="text"
               placeholder="Choose your Betmate"
               value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
+              onChange={handleSearch}
               className="shadow appearance-none border rounded py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
             />
-            {searchTerm && (
+            {searchResults.length > 0 && (
               <ul ref={dropdownRef} className="absolute z-10 w-full bg-white shadow-md max-h-60 overflow-auto border border-gray-300 rounded-lg mt-1">
-                {betMates.filter(betMate => betMate.name.toLowerCase().includes(searchTerm.toLowerCase())).map(betMate => (
+                {searchResults.map(betMate => (
                   <li key={betMate.id} className="p-2 hover:bg-gray-100 cursor-pointer" onClick={() => handleSelectBetMate(betMate)}>
-                    {betMate.name}
+                    {betMate.firstName} {betMate.lastName}
                   </li>
                 ))}
               </ul>
@@ -61,10 +100,10 @@ function MyPoints() {
         {selectedBetMate && (
           <>
             <p className="text-center text-xl p-4 bg-gray-800 text-white rounded-lg shadow-md ml-2">
-              {userPoints >= 0 ? `You are leading by ${userPoints} points!` : `You are trailing by ${Math.abs(userPoints)} points. Time for a comeback!`}
+              {userPoints >= 0 ? `You are leading by ${userPoints} points!` : `OOPS, You are trailing by ${Math.abs(userPoints)} points. Time for a comeback!`}
             </p>
-            <div>
-              <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-3 ml-2">Match Details (You VS {selectedBetMate.name})</h2>
+            <div className="overflow-x-auto"> {/* Added this container for horizontal scrolling */}
+              <h2 className="text-lg md:text-xl font-bold text-gray-800 mb-3 ml-2">Match Details (You VS {selectedBetMate.firstName} {selectedBetMate.lastName})</h2>
               <table className="min-w-full leading-normal table-auto">
                 <thead>
                   <tr>
@@ -89,47 +128,28 @@ function MyPoints() {
                   </tr>
                 </thead>
                 <tbody>
-                  {/* Dummy data for table rows */}
-                  <tr className="bg-white border-b">
-                    <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
-                      2024-04-30
-                    </td>
-                    <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
-                      24
-                    </td>
-                    <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
-                      CSK vs MI
-                    </td>
-                    <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
-                      CSK
-                    </td>
-                    <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
-                      Won
-                    </td>
-                    <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
-                      +10
-                    </td>
-                  </tr>
-                  <tr className="bg-gray-100 border-b">
-                    <td className="px-5 py-2 border-b border-gray-200 bg-gray-100 text-sm">
-                      2024-05-02
-                    </td>
-                    <td className="px-5 py-2 border-b border-gray-200 bg-gray-100 text-sm">
-                      25
-                    </td>
-                    <td className="px-5 py-2 border-b border-gray-200 bg-gray-100 text-sm">
-                      RCB vs SRH
-                    </td>
-                    <td className="px-5 py-2 border-b border-gray-200 bg-gray-100 text-sm">
-                      SRH
-                    </td>
-                    <td className="px-5 py-2 border-b border-gray-200 bg-gray-100 text-sm">
-                      Lost
-                    </td>
-                    <td className="px-5 py-2 border-b border-gray-200 bg-gray-100 text-sm">
-                      -5
-                    </td>
-                  </tr>
+                  {betDetails.map((bet) => (
+                    <tr key={bet.id} className={bet.points >= 0 ? "bg-white border-b" : "bg-gray-100 border-b"}>
+                      <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
+                        {new Date(bet.match.date).toLocaleDateString()}
+                      </td>
+                      <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
+                        {bet.match.matchDescription}
+                      </td>
+                      <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
+                        {bet.match.team1} vs {bet.match.team2}
+                      </td>
+                      <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
+                        {bet.choice}
+                      </td>
+                      <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
+                        {bet.result === 'unknown' ? 'Pending' : bet.result}
+                      </td>
+                      <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
+                        {bet.points > 0 ? `+${bet.points}` : bet.points}
+                      </td>
+                    </tr>
+                  ))}
                 </tbody>
               </table>
             </div>

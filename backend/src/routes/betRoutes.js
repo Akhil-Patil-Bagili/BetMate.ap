@@ -4,7 +4,8 @@
  const betController = require('../controllers/betController');
  const { validateToken } = require('../middleware/authMiddleware');
  
- router.post('/placeBet', validateToken, betController.placeBet);
  router.get('/user/:userId',validateToken, betController.getUserBets);
+ router.post('/initiateToss', validateToken, betController.initiateToss);
+ router.post('/chooseTeam', validateToken, betController.chooseTeam); 
  
  module.exports = router;

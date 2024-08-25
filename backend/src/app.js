@@ -1,3 +1,4 @@
+require('dotenv').config();
 const express = require('express');
 const cors = require('cors');
 const cookieParser = require('cookie-parser');
@@ -6,6 +7,7 @@ const matchRoutes = require('./routes/matchRoutes');
 const betRoutes = require('./routes/betRoutes');
 const friendRoutes = require('./routes/friendRoutes');
 const userRoutes = require('./routes/userRoutes');
+const cronJobs = require('./cronJobs');
 
 const app = express();
 

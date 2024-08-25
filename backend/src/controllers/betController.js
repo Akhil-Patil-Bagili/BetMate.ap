@@ -1,118 +1,133 @@
 const prisma = require('../prismaClient');
 
-exports.placeBet = async (req, res) => {
-    const { userId, opponentId, matchId, choice } = req.body;
-
-    try {
-        const match = await prisma.match.findUnique({
-            where: { id: matchId }
-        });
-        if (!match) {
-            return res.status(404).json({ message: "Match not found" });
-        }
-
-        const opponentChoice = choice === match.team1 ? match.team2 : match.team1;
-
-        let userResult, opponentResult;
-        let userPoints, opponentPoints;
-
-        // Determine the results and points based on the current winner
-        if (match.winner === choice) {
-            userResult = 'Win';
-            userPoints = 10;
-
-            opponentResult = 'Lose';
-            opponentPoints = -10;
-        } else if (match.winner === opponentChoice) {
-            userResult = 'Lose';
-            userPoints = -10;
-
-            opponentResult = 'Win';
-            opponentPoints = 10;
-        } else if (match.winner === 'unknown') {
-            userResult = 'unknown';
-            userPoints = 0;
-
-            opponentResult = 'unknown';
-            opponentPoints = 0;
-        }
-
-        const transaction = await prisma.$transaction([
-            prisma.bet.create({
-                data: {
-                    userId,
-                    opponentId,
-                    matchId,
-                    choice,
-                    opponentChoice,
-                    result: userResult,
-                    points: userPoints
-                }
-            }),
-            prisma.bet.create({
-                data: {
-                    userId: opponentId,
-                    opponentId: userId,
-                    matchId,
-                    choice: opponentChoice,
-                    opponentChoice: choice,
-                    result: opponentResult,
-                    points: opponentPoints
-                }
-            })
-        ]);
-
-        // Update the user's score
-        const userScore = await prisma.bet.aggregate({
-            _sum: {
-                points: true
-            },
-            where: {
-                userId: userId
-            }
-        });
-
-        const opponentScore = await prisma.bet.aggregate({
-            _sum: {
-                points: true
-            },
-            where: {
-                userId: opponentId
-            }
-        });
-
-        await prisma.user.update({
-            where: { id: userId },
-            data: { score: userScore._sum.points || 0 }
-        });
-
-        await prisma.user.update({
-            where: { id: opponentId },
-            data: { score: opponentScore._sum.points || 0 }
-        });
-
-        res.status(201).json(transaction);
-    } catch (error) {
-        console.error('Error placing bet:', error);
-        res.status(500).json({ message: "Failed to place bet", error: error.message });
-    }
-};
-
-
+// Function to retrieve the bets for a specific user
 exports.getUserBets = async (req, res) => {
     const userId = parseInt(req.params.userId, 10);
 
     try {
-        const bets = await prisma.bet.findMany({
+        const bets = await prisma.matchBetmate.findMany({
             where: { userId },
             include: {
                 match: true,
-                opponent: true 
+                betmate: true 
             }
         });
         res.json(bets);
     } catch (error) {
         console.error('Error retrieving bets:', error);
         res.status(500).json({ message: "Failed to retrieve bets", error: error.message });
+    }
+};
+
+// Function to initiate a coin toss between a user and a betmate
+exports.initiateToss = async (req, res) => {
+    const { userId, betmateId, matchId } = req.body;
+
+    try {
+        // Check if a toss has already been initiated for this match between these users
+        const existingBetmate = await prisma.matchBetmate.findFirst({
+            where: {
+                matchId,
+                userId,
+                betmateId,
+                isTossed: true,
+            }
+        });
+
+        if (existingBetmate) {
+            return res.status(400).json({ message: "Toss has already been initiated for this betmate." });
+        }
+
+        // Simulate the coin toss
+        const tossWinnerId = Math.random() > 0.5 ? userId : betmateId;
+
+        // Create a record for this match-betmate with the toss result for the user
+        const matchBetmate = await prisma.matchBetmate.create({
+            data: {
+                userId,
+                matchId,
+                betmateId,
+                isTossed: true,
+                tossWinnerId,
+                status: tossWinnerId === userId ? "toss_won" : "toss_lose"
+            }
+        });
+
+        // Create a record for the opponent's side of the match-betmate
+        await prisma.matchBetmate.create({
+            data: {
+                userId: betmateId,
+                matchId,
+                betmateId: userId,
+                isTossed: true,
+                tossWinnerId,
+                status: tossWinnerId === betmateId ? "toss_won" : "toss_lose"
+            }
+        });
+
+        res.status(201).json({ matchBetmate, message: tossWinnerId === userId ? "You won the toss!" : "You lost the toss. Waiting for your opponent to choose a team." });
+    } catch (error) {
+        console.error('Error initiating toss:', error);
+        res.status(500).json({ message: "Failed to initiate toss", error: error.message });
+    }
+};
+
+// Function to choose a team after winning the toss
+exports.chooseTeam = async (req, res) => {
+    const { userId, matchId, teamChoice } = req.body;
+
+    try {
+        // Find the MatchBetmate where the user won the toss
+        const matchBetmate = await prisma.matchBetmate.findFirst({
+            where: {
+                matchId,
+                userId,
+                isTossed: true,
+                status: "toss_won" // Only proceed if the user has won the toss
+            },
+            include: {
+                match: true // Include match details to determine opponent's team
+            }
+        });
+
+        if (!matchBetmate) {
+            return res.status(404).json({ message: "No valid toss found for this user and match." });
+        }
+
+        // Determine the opponent's choice
+        const opponentChoice = teamChoice === matchBetmate.match.team1 ? matchBetmate.match.team2 : matchBetmate.match.team1;
+
+        // Update the match-betmate record with the chosen teams for the user
+        const updatedMatchBetmate = await prisma.matchBetmate.update({
+            where: {
+                id: matchBetmate.id
+            },
+            data: {
+                userChoice: teamChoice,
+                betmateChoice: opponentChoice,
+                status: "team_chosen"
+            }
+        });
+
+        // Update the match-betmate record for the betmate
+        await prisma.matchBetmate.update({
+            where: {
+                userId_matchId_betmateId: {
+                    userId: matchBetmate.betmateId,
+                    matchId: matchBetmate.matchId,
+                    betmateId: matchBetmate.userId
+                }
+            },
+            data: {
+                userChoice: opponentChoice,
+                betmateChoice: teamChoice,
+                status: "team_chosen"
+            }
+        });
+
+        res.status(200).json({ message: "Team choice submitted successfully.", updatedMatchBetmate });
+    } catch (error) {
+        console.error('Error choosing team:', error);
+        res.status(500).json({ message: "Failed to submit team choice", error: error.message });
     }
 };

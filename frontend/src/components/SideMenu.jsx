@@ -31,7 +31,7 @@ function SideMenu({ isOpen, toggleMenu }) {
       </button>
       <Link to="/home" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">Home</Link>
       <Link to="/betmates" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">Betmates</Link>
-      <Link to="/current-bets" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">Current Bets</Link>
+      <Link to="/current-bets" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">My Bets</Link>
       <Link to="/my-points" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">My Points</Link>
       <Link to="#analytics" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">Analytics (Coming Soon)</Link>
       <button onClick={handleLogout} className="mt-10 flex items-center justify-start w-full text-left py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">

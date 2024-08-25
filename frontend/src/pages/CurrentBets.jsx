@@ -30,7 +30,7 @@ function CurrentBets() {
         <h1 className="text-2xl font-bold text-gray-800 ml-4 mt-4   mb-4">Current Bets</h1>
         <div className="grid grid-cols-1 gap-4 place-items-center md:place-items-start">
           {bets.map(bet => (
-            <CurrentBetsCard key={bet.id} bet={bet} />
+            <CurrentBetsCard key={bet.id} betmate={bet} />
           ))}
         </div>
       </div>

@@ -11,39 +11,28 @@ function HomePage() {
   const [matches, setMatches] = useState([]);
   const [betMates, setBetMates] = useState([]);
   const [selectedBetMate, setSelectedBetMate] = useState(null);
-  const [userPoints, setUserPoints] = useState(0);
+  const [totalPoints, setTotalPoints] = useState(0);
 
   useEffect(() => {
     const fetchMatches = async () => {
-      try {
-        const matchesResponse = await axios.get(API_ENDPOINTS.matches, { withCredentials: true });
-        setMatches(matchesResponse.data);
-      } catch (error) {
-        console.error("Error fetching matches:", error);
-      }
-    };
-
-    const fetchUserPoints = async () => {
-      try {
-        const userResponse = await axios.get(`${API_ENDPOINTS.users}/${user.userId}`, { withCredentials: true });
-        setUserPoints(userResponse.data.score);
-      } catch (error) {
-        console.error("Error fetching user points:", error);
-        setUserPoints(0);
-      }
+        try {
+            const matchesResponse = await axios.get(API_ENDPOINTS.matches, { withCredentials: true });
+            setMatches(matchesResponse.data);
+        } catch (error) {
+            console.error("Error fetching matches:", error);
+        }
     };
 
     const fetchBetMates = async () => {
-      try {
-        const response = await axios.get(`${API_ENDPOINTS.friends}/list/${user.userId}`, { withCredentials: true });
-        setBetMates(response.data);
-      } catch (error) {
-        console.error("Error fetching betmates:", error);
-      }
+        try {
+            const response = await axios.get(`${API_ENDPOINTS.friends}/list/${user.userId}`, { withCredentials: true });
+            setBetMates(response.data);
+        } catch (error) {
+            console.error("Error fetching betmates:", error);
+        }
     };
 
     fetchMatches();
-    fetchUserPoints();
     fetchBetMates();
   }, [user.userId]);
 
@@ -53,24 +42,50 @@ function HomePage() {
     setSelectedBetMate(selected);
 
     try {
-      const response = await axios.get(`${API_ENDPOINTS.bets}/user/${user.userId}`, { withCredentials: true });
-      const updatedMatches = matches.map(match => {
-        const matchBetmate = response.data.find(bet => bet.matchId === match.id && bet.betmateId === selected.id);
-        return {
-          ...match,
-          matchBetmates: matchBetmate ? [matchBetmate] : []
-        };
-      });
-      setMatches(updatedMatches);
+        const response = await axios.get(`${API_ENDPOINTS.bets}/user/${user.userId}/totalScore`, {
+            params: { betmateId: selected.id },
+            withCredentials: true
+        });
+
+        const totalScore = response.data.totalScore || 0;
+        setTotalPoints(totalScore);
+
+        console.log("Response of handleBetMateChange")
+        console.log(response)
+
+    try {
+          const res = await axios.get(`${API_ENDPOINTS.bets}/user/${user.userId}`, { withCredentials: true });
+          const updatedMatches = matches.map(match => {
+            const matchBetmate = res.data.find(bet => bet.matchId === match.id && bet.betmateId === selected.id);
+            return {
+              ...match,
+              matchBetmates: matchBetmate ? [matchBetmate] : []
+            };
+          });
+          setMatches(updatedMatches);
+        } catch (error) {
+          console.error("Error fetching betmate status:", error);
+      }
+          
+
+      //   const updatedMatches = matches.map(match => {
+      //     const matchBetmate = response.data.matchBetmates.find(bet => bet.matchId === match.id && bet.betmateId === selected.id);
+      //     return {
+      //         ...match,
+      //         matchBetmates: matchBetmate ? [matchBetmate] : []
+      //     };
+      // });
+
+      //   setMatches(updatedMatches);
     } catch (error) {
-      console.error("Error fetching betmate status:", error);
+        console.error("Error fetching total score:", error);
     }
   };
 
   const pointsMessage =
-    userPoints >= 0
-      ? `Congrats! You are leading by ${userPoints} points!`
-      : `OOPS, you're trailing by ${Math.abs(userPoints)} points. Time for a comeback!`;
+    totalPoints >= 0
+      ? `Congrats! You are leading by ${totalPoints} points!`
+      : `OOPS, you're trailing by ${Math.abs(totalPoints)} points. Time for a comeback!`;
 
   return (
     <div className="bg-gray-100 max-w-screen-xl mx-auto pt-16">

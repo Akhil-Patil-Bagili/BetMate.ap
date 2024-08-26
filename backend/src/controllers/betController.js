@@ -131,3 +131,25 @@ exports.chooseTeam = async (req, res) => {
         res.status(500).json({ message: "Failed to submit team choice", error: error.message });
     }
 };
+
+exports.getUserTotalScore = async (req, res) => {
+    const { userId } = req.params;
+    const { betmateId } = req.query;
+
+    try {
+        const totalScore = await prisma.matchBetmate.aggregate({
+            _sum: {
+                userScore: true
+            },
+            where: {
+                userId: parseInt(userId),
+                betmateId: parseInt(betmateId)
+            }
+        });
+
+        res.json({ totalScore: totalScore._sum.userScore || 0 });
+    } catch (error) {
+        console.error('Error fetching total score:', error.message);
+        res.status(500).json({ message: "Error fetching total score", error: error.message });
+    }
+};

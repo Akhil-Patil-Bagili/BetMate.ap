@@ -7,5 +7,6 @@
  router.get('/user/:userId',validateToken, betController.getUserBets);
  router.post('/initiateToss', validateToken, betController.initiateToss);
  router.post('/chooseTeam', validateToken, betController.chooseTeam); 
+ router.get('/user/:userId/totalScore', validateToken, betController.getUserTotalScore);
  
  module.exports = router;

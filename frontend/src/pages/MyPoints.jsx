@@ -51,11 +51,13 @@ function MyPoints() {
     setSelectedBetMate(betMate);
     setSearchTerm(`${betMate.firstName} ${betMate.lastName}`);
     try {
-      // Fetch the user's score from the backend
-      const userResponse = await axios.get(`${API_ENDPOINTS.users}/${user.userId}`, {
-        withCredentials: true
+      const response = await axios.get(`${API_ENDPOINTS.bets}/user/${user.userId}/totalScore`, {
+          params: { betmateId: betMate.id },
+          withCredentials: true
       });
-      setUserPoints(userResponse.data.score);
+
+      const totalScore = response.data.totalScore || 0;
+      setUserPoints(totalScore);
   
       // Fetch bets for the user
       const betResponse = await axios.get(`${API_ENDPOINTS.bets}/user/${user.userId}`, {
@@ -140,13 +142,15 @@ function MyPoints() {
                         {bet.match.team1} vs {bet.match.team2}
                       </td>
                       <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
-                        {bet.choice}
+                        {bet.userChoice}
                       </td>
                       <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
-                        {bet.result === 'unknown' ? 'Pending' : bet.result}
+                        {/* {bet.result === 'unknown' ? 'Pending' : bet.result} */}
+                        {bet.status}
                       </td>
                       <td className="px-5 py-2 border-b border-gray-200 bg-white text-sm">
-                        {bet.points > 0 ? `+${bet.points}` : bet.points}
+                        {/* {bet.points > 0 ? `+${bet.points}` : bet.points} */}
+                        {bet.userScore}
                       </td>
                     </tr>
                   ))}

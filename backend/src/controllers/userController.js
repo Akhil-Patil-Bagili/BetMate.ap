@@ -16,8 +16,7 @@ exports.userSearch = async (req, res) => {
                 id: true,
                 username: true,
                 firstName: true,
-                lastName: true,
-                score: true
+                lastName: true
             }
         });
         res.json(users);
@@ -30,47 +29,28 @@ exports.userSearch = async (req, res) => {
 
 exports.getUserById = async (req, res) => {
     const { userId } = req.params;
+    const { betmateId } = req.query; // Get betmateId from the query parameters
+
     try {
-        // Fetch user basic information
-        const user = await prisma.user.findUnique({
-            where: { id: parseInt(userId) },
+        const betmateScore = await prisma.matchBetmate.findFirst({
+            where: {
+                userId: parseInt(userId),
+                betmateId: parseInt(betmateId),
+            },
             select: {
-                id: true,
-                username: true,
-                firstName: true,
-                lastName: true,
-                score: true
+                userScore: true,
             }
         });
 
-        if (!user) {
-            return res.status(404).json({ message: "User not found" });
+        if (!betmateScore) {
+            return res.status(404).json({ message: "Score not found for this betmate" });
         }
 
-        // Calculate the user's score dynamically
-        const userScore = await prisma.bet.aggregate({
-            _sum: {
-                points: true
-            },
-            where: {
-                userId: parseInt(userId)
-            }
-        });
-
-        const updatedUser = await prisma.user.update({
-            where: { id: parseInt(userId) },
-            data: { score: userScore._sum.points || 0 },
-            select: {
-                id: true,
-                username: true,
-                firstName: true,
-                lastName: true,
-                score: true
-            }
-        });
-
-        res.json(updatedUser);
+        res.json({ score: betmateScore.userScore });
     } catch (error) {
         res.status(500).json({ message: "Error fetching user data", error: error.message });
     }
 };
+
+
+

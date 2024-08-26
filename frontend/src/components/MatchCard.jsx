@@ -32,6 +32,8 @@ const teamLogos = {
 };
 
 function MatchCard({ match, betmate }) {
+  console.log(match)
+  console.log(betmate)
   const navigate = useNavigate(); 
   const { setMatch } = useMatch();
   const { user } = useAuth();
@@ -68,8 +70,10 @@ function MatchCard({ match, betmate }) {
   };
 
   const matchBetmate = match.matchBetmates?.find(mb => mb.betmateId === betmate.id);
+  console.log('Match Betmate:', matchBetmate);
 
   if (!matchBetmate) {
+    console.log('No matchBetmate found for this match and betmate:', match, betmate);
     return (
       <div className="w-full max-w-2xl mx-auto bg-white border border-gray-200 rounded-lg shadow overflow-hidden my-4">
         <div className="text-center font-medium text-sm text-gray-800 px-5 pt-5">
@@ -97,7 +101,8 @@ function MatchCard({ match, betmate }) {
     );
   }
 
-  const status = matchBetmate.status;
+  const status = matchBetmate.status || 'no_bet'; // Default to "no_bet" if status is undefined
+  console.log('Match Betmate Status:', status);
 
   const renderButton = () => {
     switch (status) {
@@ -137,6 +142,20 @@ function MatchCard({ match, betmate }) {
         return (
           <button disabled className="mt-2 inline-flex items-center px-3 py-2 text-sm font-medium text-center text-gray-500 bg-gray-300 rounded-lg cursor-not-allowed">
             Teams Chosen
+            <TbLock className="w-5 h-5 ml-2" />
+          </button>
+        );
+      case "won":
+        return (
+          <button disabled className="mt-2 inline-flex items-center px-3 py-2 text-sm font-medium text-center text-gray-500 bg-gray-300 rounded-lg cursor-not-allowed">
+            Won
+            <TbLock className="w-5 h-5 ml-2" />
+          </button>
+        );
+      case "lost":
+        return (
+          <button disabled className="mt-2 inline-flex items-center px-3 py-2 text-sm font-medium text-center text-gray-500 bg-gray-300 rounded-lg cursor-not-allowed">
+            Lost
             <TbLock className="w-5 h-5 ml-2" />
           </button>
         );

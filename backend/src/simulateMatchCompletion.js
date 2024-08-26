@@ -6,7 +6,7 @@ async function simulateMatchCompletion() {
 
   const updatedMatches = [
     {
-      id: 89654, // Unique matchId
+      id: 89651, // Unique matchId
       date: new Date('2024-08-25T14:00:00.000Z'),
       team1: 'CSK',
       team2: 'MI',
@@ -16,20 +16,59 @@ async function simulateMatchCompletion() {
       seriesName: 'Indian Premier League 2024',
       state: 'complete', // Simulating the match completion
       status: 'Chennai Super Kings won by 6 wkts',
-      winner: 'CSK',
+      winner: 'CSK'
     },
     {
-      id: 89661, // The second match remains the same, no change
+      id: 89652, // The second match remains the same, no change
       date: new Date('2024-08-26T14:00:00.000Z'),
+      team1: 'DC',
+      team2: 'GT',
+      matchDescription: 'Test Match 2',
+      location: 'Delhi',
+      matchType: 'T20',
+      seriesName: 'Indian Premier League 2024',
+      state: 'complete',
+      status: 'Delhi Capitals won by 4 wkts',
+      winner: 'DC'
+    },
+    {
+      id: 89653, // The second match remains the same, no change
+      date: new Date('2024-08-27T14:00:00.000Z'),
       team1: 'RCB',
       team2: 'SRH',
-      matchDescription: 'Test Match 2',
+      matchDescription: 'Test Match 3',
       location: 'Bangalore',
       matchType: 'T20',
       seriesName: 'Indian Premier League 2024',
       state: 'scheduled',
+      status: 'scheduled',
+      winner: 'unknown'
+    },
+    {
+      id: 89654, // The second match remains the same, no change
+      date: new Date('2024-08-27T14:00:00.000Z'),
+      team1: 'KKR',
+      team2: 'LSG',
+      matchDescription: 'Test Match 4',
+      location: 'Kolkata',
+      matchType: 'T20',
+      seriesName: 'Indian Premier League 2024',
+      state: 'scheduled',
       status: 'Scheduled',
-      winner: 'unknown',
+      winner: 'unknown'
+    },
+    {
+      id: 89655, // The second match remains the same, no change
+      date: new Date('2024-08-28T14:00:00.000Z'),
+      team1: 'PBKS',
+      team2: 'MI',
+      matchDescription: 'Test Match 5',
+      location: 'Mumbai',
+      matchType: 'T20',
+      seriesName: 'Indian Premier League 2024',
+      state: 'scheduled',
+      status: 'Scheduled',
+      winner: 'unknown'
     },
   ];
 
@@ -65,79 +104,95 @@ async function simulateMatchCompletion() {
 }
 
 const updateUserScores = async (matchId, winner) => {
-    try {
-      console.log(`Updating scores for matchId: ${matchId} with winner: ${winner}`);
-  
-      const matchBetmates = await prisma.matchBetmate.findMany({
-        where: { matchId }
-      });
-  
-      if (matchBetmates.length === 0) {
-        console.log(`No betmates found for matchId: ${matchId}`);
-        return;
+  try {
+    console.log(`Updating scores for matchId: ${matchId} with winner: ${winner}`);
+
+    const matchBetmates = await prisma.matchBetmate.findMany({
+      where: { matchId }
+    });
+
+    if (matchBetmates.length === 0) {
+      console.log(`No betmates found for matchId: ${matchId}`);
+      return;
+    }
+
+    const processedPairs = new Set();
+
+    for (const betmate of matchBetmates) {
+      const userId = betmate.userId;
+      const betmateId = betmate.betmateId;
+
+      // Ensure the user-betmate pair is processed only once for this match
+      if (processedPairs.has(`${userId}-${betmateId}`) || processedPairs.has(`${betmateId}-${userId}`)) {
+        console.log(`Scores already updated for user-betmate pair: ${userId}-${betmateId}, skipping...`);
+        continue;
       }
-  
-      const processedUsers = new Set();
-  
-      for (const betmate of matchBetmates) {
-        const userId = betmate.userId;
-        const betmateId = betmate.betmateId;
-  
-        // Ensure the user-betmate pair is processed only once
-        if (processedUsers.has(`${userId}-${betmateId}`) || processedUsers.has(`${betmateId}-${userId}`)) {
-          console.log(`Scores already updated for user-betmate pair: ${userId}-${betmateId}, skipping...`);
-          continue;
-        }
-  
-        console.log(`Processing betmate: ${betmate.id} - userChoice: ${betmate.userChoice}, betmateChoice: ${betmate.betmateChoice}`);
-  
-        let points = 0;
-        if (betmate.userChoice === winner) {
-          points = 10;
-          console.log(`User ${betmate.userId} wins, awarding ${points} points.`);
-        } else if (betmate.betmateChoice === winner) {
-          points = -10;
-          console.log(`User ${betmate.userId} loses, subtracting ${-points} points.`);
-        }
-  
-        // Update the user's score
-        await prisma.user.update({
-          where: { id: betmate.userId },
-          data: {
-            score: {
-              increment: points,
-            },
+
+      console.log(`Processing betmate: ${betmate.id} - userChoice: ${betmate.userChoice}, betmateChoice: ${betmate.betmateChoice}`);
+
+      let points = 0;
+      let userStatus = "lost";
+      let betmateStatus = "won";
+
+      if (betmate.userChoice === winner) {
+        points = 10;
+        userStatus = "won";
+        betmateStatus = "lost";
+        console.log(`User ${betmate.userId} wins, awarding ${points} points.`);
+      } else if (betmate.betmateChoice === winner) {
+        points = -10;
+        userStatus = "lost";
+        betmateStatus = "won";
+        console.log(`User ${betmate.userId} loses, subtracting ${Math.abs(points)} points.`);
+      }
+      else{
+        points = 0;
+        userStatus = "unknown"
+        betmateStatus = "unknown"
+      }
+
+      // Update the MatchBetmate record with points and status for the user
+      await prisma.matchBetmate.update({
+        where: { id: betmate.id },
+        data: {
+          userScore: {
+            increment: points,
           },
-        });
-  
-        // Optionally update the betmate's score as well
-        await prisma.user.update({
-          where: { id: betmate.betmateId },
+          status: userStatus,
+        },
+      });
+
+      // Update the MatchBetmate record with the inverse status for the betmate
+      const betmateRecord = await prisma.matchBetmate.findFirst({
+        where: {
+          userId: betmate.betmateId,
+          matchId: betmate.matchId,
+          betmateId: betmate.userId
+        }
+      });
+
+      if (betmateRecord) {
+        await prisma.matchBetmate.update({
+          where: { id: betmateRecord.id },
           data: {
-            score: {
+            userScore: {
               increment: -points,
             },
+            status: betmateStatus,
           },
         });
-  
-        // Update the MatchBetmate record with points and status
-        await prisma.matchBetmate.update({
-          where: { id: betmate.id },
-          data: {
-            status: points > 0 ? "won" : "lost",
-          },
-        });
-  
-        // Mark this user-betmate pair as processed
-        processedUsers.add(`${userId}-${betmateId}`);
-        processedUsers.add(`${betmateId}-${userId}`);
-  
-        console.log(`Updated scores for betmate: ${betmate.id}`);
       }
-    } catch (error) {
-      console.error('Error updating user scores:', error.message);
+
+      // Mark this user-betmate pair as processed for this match
+      processedPairs.add(`${userId}-${betmateId}`);
+      processedPairs.add(`${betmateId}-${userId}`);
+
+      console.log(`Updated scores for betmate: ${betmate.id}`);
     }
-  };
+  } catch (error) {
+    console.error('Error updating user scores:', error.message);
+  }
+};
 
 // Run the simulation
 simulateMatchCompletion();

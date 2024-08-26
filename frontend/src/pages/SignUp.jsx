@@ -31,7 +31,7 @@ export const SignUp = () => {
             if (response.status === 201) {
                 setUser({ username, firstName, lastName });  // Set user in context
                 alert("User signed up successfully!");
-                navigate('/home');  // Navigate to home page upon successful signup
+                navigate("/home");  
             }
         } catch (error) {
             console.error('Signup failed:', error);

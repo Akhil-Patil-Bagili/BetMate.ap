@@ -1,6 +1,11 @@
 import React from 'react';
 
 function TeamSelectionModal({ showModal, result, currentMatch, placeBet, setShowModal }) {
+  if (!currentMatch) {
+    console.log("currentMatch in the Team Selection Modal")
+    console.log(currentMatch)
+    return null; // Do not render if currentMatch is not available
+  }
   return (
     showModal && (
       <div className={`fixed inset-0 bg-gray-800 bg-opacity-50 flex justify-center items-center`}>

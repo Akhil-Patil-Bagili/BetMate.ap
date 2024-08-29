@@ -8,8 +8,12 @@ export const MatchProvider = ({ children }) => {
     const [currentMatch, setCurrentMatch] = useState(null);
 
     const setMatch = (match) => {
-        console.log("Setting current match:", match);
-        setCurrentMatch(match);
+        const safeMatch = {
+            ...match,
+            matchBetmates: match.matchBetmates || [], 
+        };
+        console.log("Setting current match:", safeMatch);
+        setCurrentMatch(safeMatch);
     };
 
     return (

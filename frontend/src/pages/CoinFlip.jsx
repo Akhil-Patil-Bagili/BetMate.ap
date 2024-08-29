@@ -14,11 +14,6 @@ function CoinFlip() {
     const [showModal, setShowModal] = useState(false);
     const { user } = useAuth();
 
-    useEffect(() => {
-        if (!currentMatch || !currentMatch.selectedBetmate) {
-            alert('Please select a match and a betmate first.');
-        }
-    }, [currentMatch]);
 
     const flipCoin = async () => {
         if (!currentMatch || !currentMatch.selectedBetmate) {
@@ -29,6 +24,8 @@ function CoinFlip() {
         setFlipping(true);
 
         try {
+            console.log("currentMatch checking")
+            console.log(currentMatch)
             const response = await axios.post(`${API_ENDPOINTS.bets}/initiateToss`, {
                 userId: user.userId,
                 betmateId: currentMatch.selectedBetmate.id,
@@ -37,10 +34,22 @@ function CoinFlip() {
                 withCredentials: true
             });
 
+            console.log("responseeeeeee")
+            console.log(response)
+
             if (response.data && response.data.matchBetmate) {
                 const tossWinnerId = response.data.matchBetmate.tossWinnerId;
                 setResult(tossWinnerId === user.userId ? 'win' : 'lose');
                 setShowModal(true);
+
+                // setMatch((prevMatch) => ({
+                //     ...prevMatch,
+                //     matchBetmates: (prevMatch.matchBetmates || []).map((mb) => 
+                //         mb.betmateId === currentMatch.selectedBetmate.id
+                //             ? { ...mb, status: tossWinnerId === user.userId ? 'toss_won' : 'toss_lose' }
+                //             : mb
+                //     ),
+                // }));
             } else {
                 alert('Failed to initiate toss or toss already initiated. Please try again.');
                 setFlipping(false);
@@ -62,12 +71,21 @@ function CoinFlip() {
             const response = await axios.post(`${API_ENDPOINTS.bets}/chooseTeam`, {
                 userId: user.userId,
                 matchId: currentMatch.id,
-                betmateId: currentMatch.selectedBetmate.id, // Ensure betmateId is passed
+                betmateId: currentMatch.selectedBetmate.id,
                 teamChoice
             }, {
                 withCredentials: true
             });
-            console.log('Team chosen successfully:', response.data);
+
+            setMatch((prevMatch) => ({
+                ...prevMatch,
+                matchBetmates: prevMatch.matchBetmates.map((mb) =>
+                    mb.betmateId === currentMatch.selectedBetmate.id
+                        ? { ...mb, status: 'team_chosen' }
+                        : mb
+                ),
+            }));
+            
             setShowModal(false);
 
         } catch (error) {

@@ -7,8 +7,8 @@ import { useMatch } from '../context/MatchContext';
 import { useNavigate } from "react-router-dom";
 import { FaUserFriends } from "react-icons/fa";
 import { BsPersonPlusFill } from "react-icons/bs";
-import { MdOutlineSportsCricket, MdOutlineSentimentDissatisfied } from "react-icons/md"; // Import a new icon
-import welcomeImage from '../assets/images (1).png'; // Import your image
+import { MdOutlineSportsCricket, MdOutlineSentimentDissatisfied } from "react-icons/md"; 
+import welcomeImage from '../assets/images (1).png'; 
 
 function HomePage() {
   const { user } = useAuth();
@@ -23,30 +23,28 @@ function HomePage() {
   const [activeFilter, setActiveFilter] = useState('active'); // default filter
   const navigate = useNavigate();
   const searchBoxRef = useRef(null);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    const fetchMatches = async () => {
-      try {
-        const matchesResponse = await axios.get(API_ENDPOINTS.matches, { withCredentials: true });
-        setMatches(matchesResponse.data);
-      } catch (error) {
-        console.error("Error fetching matches:", error);
-      }
+    const fetchMatchesAndBetMates = async () => {
+        try {
+            const [matchesResponse, betmatesResponse] = await Promise.all([
+                axios.get(API_ENDPOINTS.matches, { withCredentials: true }),
+                axios.get(`${API_ENDPOINTS.friends}/list/${user.userId}`, { withCredentials: true }),
+            ]);
+
+            setMatches(matchesResponse.data);
+            setBetMates(betmatesResponse.data);
+            setFilteredBetMates(betmatesResponse.data);
+        } catch (error) {
+            console.error("Error fetching matches or betmates:", error);
+        } finally {
+            setLoading(false); 
+        }
     };
 
-    const fetchBetMates = async () => {
-      try {
-        const response = await axios.get(`${API_ENDPOINTS.friends}/list/${user.userId}`, { withCredentials: true });
-        setBetMates(response.data);
-        setFilteredBetMates(response.data);
-      } catch (error) {
-        console.error("Error fetching betmates:", error);
-      }
-    };
-
-    fetchMatches();
-    fetchBetMates();
-  }, [user.userId]);
+    fetchMatchesAndBetMates();
+}, [user.userId]);
 
   useEffect(() => {
     const handleClickOutside = (event) => {
@@ -65,12 +63,11 @@ function HomePage() {
     // Filter matches based on the selected filter
     const filterMatches = () => {
       if (!selectedBetMate) return;
-  
-      const activeStatuses = ['team_chosen', 'waiting_for_opponent'];
-      const upcomingStatuses = ['no_bet', 'flip_a_coin', 'unknown'];
+
+      const activeStatuses = ['team_chosen','toss_lose','toss_won','waiting_for_opponent', 'choose_team'];
       const completedStatuses = ['won', 'lost'];
-  
       let filtered;
+
       switch (activeFilter) {
         case 'active':
           filtered = matches.filter((match) =>
@@ -81,9 +78,10 @@ function HomePage() {
           break;
         case 'upcoming':
           filtered = matches.filter((match) =>
-            match.matchBetmates?.some(
-              (mb) => mb.betmateId === selectedBetMate.id && upcomingStatuses.includes(mb.status)
-            )
+            match.state !== 'complete' &&
+            (!match.matchBetmates || match.matchBetmates.every(
+              (mb) => mb.betmateId !== selectedBetMate.id || mb.status === 'no_bet'
+            ))
           );
           break;
         case 'completed':
@@ -96,10 +94,10 @@ function HomePage() {
         default:
           filtered = matches;
       }
-  
+
       setFilteredMatches(filtered);
     };
-  
+
     filterMatches();
   }, [activeFilter, matches, selectedBetMate]);
 
@@ -122,30 +120,31 @@ function HomePage() {
     setSelectedBetMate(betmate);
     setSearchTerm('');
     setFilteredBetMates([]);
-
+  
     try {
       const response = await axios.get(`${API_ENDPOINTS.bets}/user/${user.userId}/totalScore`, {
         params: { betmateId: betmate.id },
         withCredentials: true
       });
-
+  
       const totalScore = response.data.totalScore || 0;
       setTotalPoints(totalScore);
-
+  
       try {
         const res = await axios.get(`${API_ENDPOINTS.bets}/user/${user.userId}`, { withCredentials: true });
         const updatedMatches = matches.map(match => {
-          const matchBetmate = res.data.find(bet => bet.matchId === match.id && bet.betmateId === betmate.id);
-          return {
-            ...match,
-            matchBetmates: matchBetmate ? [matchBetmate] : []
-          };
+            const matchBetmate = res.data.find(bet => bet.matchId === match.id && bet.betmateId === betmate.id);
+            const updatedMatch = matchBetmate ? { ...match, matchBetmates: [matchBetmate] } : match;
+  
+            
+  
+            return updatedMatch;
         });
         setMatches(updatedMatches);
       } catch (error) {
         console.error("Error fetching betmate status:", error);
       }
-
+  
     } catch (error) {
       console.error("Error fetching total score:", error);
     }
@@ -163,7 +162,9 @@ function HomePage() {
           Hello {user.firstName}, Welcome to Bet Mate!
         </h1>
 
-        {betMates.length === 0 ? (
+        {loading ? (
+                <div>Loading...</div> // Show a loading state while data is being fetched
+            ) : betMates.length === 0 ? (
           // User has no betmates
           <div className="flex flex-col lg:flex-row items-center lg:space-x-12 p-6 mb-6 bg-white shadow-md rounded-lg">
             <div className="lg:w-1/2 flex justify-center mb-4 lg:mb-0">
@@ -273,6 +274,7 @@ function HomePage() {
                         match={match}
                         betmate={selectedBetMate}
                         onMatchSelect={() => setMatch({ ...match, selectedBetmate: selectedBetMate })}
+                        setMatches={setMatches}
                       />
                     ))}
                   </div>

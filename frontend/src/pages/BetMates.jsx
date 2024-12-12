@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HiOutlineUserAdd, HiCheck, HiX, HiOutlineClock } from 'react-icons/hi';
 import { AiOutlineCheckCircle } from 'react-icons/ai';
+import { FaUserMinus } from 'react-icons/fa';
 import axios from 'axios';
 import { API_ENDPOINTS } from "../apiConfig"
 import { useAuth } from '../context/AuthContext'
@@ -43,12 +44,16 @@ function BetMates() {
             const response = await axios.get(`${API_ENDPOINTS.friends}/pendingRequests`, {
                 withCredentials: true
             });
-            setPendingRequests(response.data);
+            const filteredRequests = response.data.filter(
+                (request) => request.addresseeId === user.userId && request.status === 'pending'
+            );
+            setPendingRequests(filteredRequests);
         } catch (error) {
             console.error('Failed to fetch pending requests:', error);
         }
     };
 
+    
     const handleSearch = async (e) => {
         setSearchTerm(e.target.value);
         if (e.target.value.length >= 1) {
@@ -74,7 +79,7 @@ function BetMates() {
             console.warn('Request already sent!');
             return; 
         }
-    
+        
         try {
             const requesterId = user.userId; 
             const response = await axios.post(API_ENDPOINTS.friends + '/sendRequest', {
@@ -88,7 +93,19 @@ function BetMates() {
             alert('Failed to send friend request. Please try again.');
         }
     };
-
+    const removeBetmate = async (betMateId) => {
+        if (!user) return;
+        try {
+            await axios.delete(`${API_ENDPOINTS.friends}/removeBetmate/${betMateId}`, {
+                withCredentials: true
+            });
+            console.log('Friend removed successfully');
+            setBetMates(prev => prev.filter(betMate => betMate.id !== betMateId));
+        } catch (error) {
+            console.error('Failed to remove betmate:', error);
+            alert('Failed to remove betmate. Please try again.');
+        }
+    };
     const handleApproval = async (requestId) => {
         try {
             await axios.put(`${API_ENDPOINTS.friends}/acceptRequest/${requestId}`, {}, { withCredentials: true });
@@ -170,7 +187,12 @@ function BetMates() {
                             <div className="flex-grow">
                                 <h5 className="font-semibold">{betMate.name}</h5>
                             </div>
-                            <AiOutlineCheckCircle className="text-green-500" />
+                            <div className="flex space-x-3">
+                                {/* <AiOutlineCheckCircle className="text-green-500" /> */}
+                                <button onClick={() => removeBetmate(betMate.id)} className="text-red-600 hover:text-red-800">
+                                    <FaUserMinus className="text-xl" />
+                                </button>
+                            </div>
                         </div>
                     ))}
                 </div>

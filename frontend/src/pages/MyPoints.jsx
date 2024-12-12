@@ -27,24 +27,39 @@ function MyPoints() {
   const handleSearch = async (e) => {
     setSearchTerm(e.target.value);
     if (e.target.value.length >= 1) {
-      try {
-        const response = await axios.get(`${API_ENDPOINTS.friends}/list/${user.userId}`, {
-          params: { query: e.target.value },
-          withCredentials: true 
-        });
-        setSearchResults(response.data.map(user => ({
-          id: user.id,
-          firstName: user.firstName,
-          lastName: user.lastName
-        })));
-      } catch (error) {
-        console.error('Error fetching search results:', error);
-        setSearchResults([]);
-      }
+        try {
+            const [friendsResponse, pastBetmatesResponse] = await Promise.all([
+                axios.get(`${API_ENDPOINTS.friends}/list/${user.userId}`, {
+                    params: { query: e.target.value },
+                    withCredentials: true,
+                }),
+                axios.get(`${API_ENDPOINTS.friends}/pastBetmates`, {
+                    params: { query: e.target.value },
+                    withCredentials: true,
+                }),
+            ]);
+
+            setSearchResults([
+                ...friendsResponse.data.map(user => ({
+                    id: user.id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                })),
+                ...pastBetmatesResponse.data.map(user => ({
+                    id: user.id,
+                    firstName: user.firstName,
+                    lastName: user.lastName,
+                })),
+            ]);
+        } catch (error) {
+            console.error('Error fetching search results:', error);
+            setSearchResults([]);
+        }
     } else {
-      setSearchResults([]);
+        setSearchResults([]);
     }
-  };
+};
+
 
   const handleSelectBetMate = async (betMate) => {
     console.log("Betmate selected:", betMate.firstName, betMate.lastName);

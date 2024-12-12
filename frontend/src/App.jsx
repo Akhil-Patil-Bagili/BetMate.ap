@@ -12,6 +12,9 @@ import MyPoints from './pages/MyPoints';
 import LandingPage from './pages/LandingPage';
 import {SignIn} from './pages/SignIn';
 import {SignUp} from './pages/SignUp';
+import AdminRoute from './components/AdminRoute'
+import AdminPage from './pages/AdminPage';
+
 
 function AppWrapper() {
     return (
@@ -54,6 +57,10 @@ function App() {
                     <Route path="/betmates" element={<BetMates />} />
                     <Route path="/current-bets" element={<CurrentBets />} />
                     <Route path="/my-points" element={<MyPoints />} />
+                    <Route path="/admin" element={<AdminRoute>
+                                                     <AdminPage />
+                                                 </AdminRoute>
+                                                    }/>
                 </Routes>
             </div>
         </Router>

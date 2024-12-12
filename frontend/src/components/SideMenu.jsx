@@ -8,7 +8,7 @@ import { API_ENDPOINTS } from "../apiConfig";
 function SideMenu({ isOpen, toggleMenu }) {
   const topBarHeight = '64px'; 
   const navigate = useNavigate();
-  const { setUser } = useAuth();
+  const { user, setUser } = useAuth();
 
   const handleLogout = async () => {
     try {
@@ -21,6 +21,8 @@ function SideMenu({ isOpen, toggleMenu }) {
       console.error("Logout failed:", error);
     }
   };
+
+  console.log(user);
   
 
   return (
@@ -34,6 +36,11 @@ function SideMenu({ isOpen, toggleMenu }) {
       <Link to="/current-bets" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">My Bets</Link>
       <Link to="/my-points" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">My Points</Link>
       <Link to="#analytics" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">Analytics (Coming Soon)</Link>
+      {user && user.isAdmin && (
+    <Link to="/admin" className="block py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">
+        Admin Portal
+    </Link>
+)}
       <button onClick={handleLogout} className="mt-10 flex items-center justify-start w-full text-left py-2.5 px-4 rounded transition duration-200 hover:bg-gray-600">
         <HiOutlineLogout className="mr-2" size={24} />
         Logout

@@ -18,7 +18,9 @@ export const AuthProvider = ({ children }) => {
                     setUser({
                         userId: response.data.userId,
                         firstName: response.data.firstName, // Assuming these are part of the response
-                        lastName: response.data.lastName
+                        lastName: response.data.lastName,
+                        isAdmin: response.data.isAdmin,
+                    
                     });
                 } else {
                     setUser(null);

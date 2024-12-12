@@ -11,12 +11,26 @@ router.get('/logout', authController.logout);
 router.get('/validate', validateToken, async (req, res) => {
     try {
         const user = await prisma.user.findUnique({
-            where: { id: req.user.userId }
+            where: { id: req.user.userId },
+            select: {
+                id: true,
+                firstName: true,
+                lastName: true,
+                isAdmin: true,
+            },
         });
+        
+
         if (!user) {
             return res.status(404).json({ message: "User not found" });
         }
-        res.status(200).json({ message: "Authenticated successfully", userId: user.id, firstName: user.firstName, lastName: user.lastName });
+        res.status(200).json({
+            message: "Authenticated successfully",
+            userId: user.id,
+            firstName: user.firstName,
+            lastName: user.lastName,
+            isAdmin: user.isAdmin, 
+        });
     } catch (error) {
         res.status(500).json({ message: "Server error", error: error.message });
     }

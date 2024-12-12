@@ -32,45 +32,37 @@ exports.sendFriendRequest = async (req, res) => {
 };
 
 exports.getPendingRequests = async (req, res) => {
-  const userId = parseInt(req.user.userId); 
+  const userId = parseInt(req.user.userId);
 
   try {
-    const pendingRequests = await prisma.friendRequest.findMany({
-      where: {
-          OR: [
-              { requesterId: userId, status: 'pending' },
-              { addresseeId: userId, status: 'pending' }
-          ],
-      },
-      include: {
-          requester: {
-              select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true
-              }
+      const pendingRequests = await prisma.friendRequest.findMany({
+          where: {
+              OR: [
+                  { addresseeId: userId, status: 'pending' }, // Requests where the user is the receiver
+              ],
           },
-          addressee: {
-              select: {
-                  id: true,
-                  firstName: true,
-                  lastName: true
-              }
-          }
-      }
-  });
+          include: {
+              requester: {
+                  select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                  },
+              },
+          },
+      });
 
-      const mappedRequests = pendingRequests.map(request => ({
-        id: request.id,
-        name: request.requesterId === userId ? 
-             `${request.addressee.firstName} ${request.addressee.lastName}` :
-             `${request.requester.firstName} ${request.requester.lastName}`,
-        status: request.status
-    }));
+      const mappedRequests = pendingRequests.map((request) => ({
+          id: request.id,
+          name: `${request.requester.firstName} ${request.requester.lastName}`,
+          requesterId: request.requester.id,
+          addresseeId: userId,
+          status: request.status,
+      }));
 
       res.json(mappedRequests);
   } catch (error) {
-      res.status(500).json({ message: "Failed to fetch pending requests", error: error.message });
+      res.status(500).json({ message: 'Failed to fetch pending requests', error: error.message });
   }
 };
 
@@ -107,6 +99,43 @@ exports.declineFriendRequest = async (req, res) => {
     }
 };
 
+exports.removeFriend = async (req, res) => {
+  const { userId } = req.user; 
+  const { betMateId } = req.params;
+
+  try {
+      const connection = await prisma.friendRequest.findFirst({
+          where: {
+              OR: [
+                  { requesterId: userId, addresseeId: parseInt(betMateId), status: 'accepted' },
+                  { requesterId: parseInt(betMateId), addresseeId: userId, status: 'accepted' },
+              ],
+          },
+      });
+
+      if (!connection) {
+          return res.status(404).json({ message: 'Betmate not found' });
+      }
+
+      await prisma.pastBetmate.create({
+        data: {
+            userId: connection.requesterId === userId ? connection.requesterId : connection.addresseeId,
+            betmateId: connection.requesterId === userId ? connection.addresseeId : connection.requesterId,
+        },
+    });
+
+      await prisma.friendRequest.delete({
+          where: {
+              id: connection.id,
+          },
+      });
+
+      res.status(200).json({ message: 'Betmate removed successfully' });
+  } catch (error) {
+      res.status(500).json({ message: 'Failed to remove betmate', error: error.message });
+  }
+};
+
 exports.listFriends = async (req, res) => {
     const { userId } = req.params;
     try {
@@ -127,3 +156,27 @@ exports.listFriends = async (req, res) => {
       res.status(500).json({ message: "Failed to list friends", error: error.message });
     }
 };
+
+exports.getPastBetmates = async (req, res) => {
+  const { userId } = req.user;
+
+  try {
+      const pastBetmates = await prisma.pastBetmate.findMany({
+          where: { userId },
+          include: {
+              betmate: {
+                  select: {
+                      id: true,
+                      firstName: true,
+                      lastName: true,
+                  },
+              },
+          },
+      });
+
+      res.json(pastBetmates.map(p => p.betmate));
+  } catch (error) {
+      res.status(500).json({ message: 'Failed to fetch past betmates', error: error.message });
+  }
+};
+

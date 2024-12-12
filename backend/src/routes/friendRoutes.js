@@ -9,5 +9,9 @@ router.get('/pendingRequests', validateToken, friendController.getPendingRequest
 router.put('/acceptRequest/:requestId', validateToken, friendController.acceptFriendRequest);
 router.put('/declineRequest/:requestId', validateToken, friendController.declineFriendRequest);
 router.get('/list/:userId', validateToken,friendController.listFriends);
+router.delete('/removeBetmate/:betMateId', validateToken, friendController.removeFriend);
+router.get('/pastBetmates', validateToken, friendController.getPastBetmates);
+
+
 
 module.exports = router;

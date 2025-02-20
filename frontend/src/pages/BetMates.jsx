@@ -1,145 +1,150 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { HiOutlineUserAdd, HiCheck, HiX, HiOutlineClock } from 'react-icons/hi';
-import { AiOutlineCheckCircle } from 'react-icons/ai';
 import { FaUserMinus } from 'react-icons/fa';
-import axios from 'axios';
-import { API_ENDPOINTS } from "../apiConfig"
-import { useAuth } from '../context/AuthContext'
+import { useAuth } from '../context/AuthContext';
+import { useDispatch, useSelector } from 'react-redux';
+import {
+  fetchBetMates,
+  fetchPendingRequests,
+  addBetMateAsync,
+  removeBetMateAsync,
+  acceptRequestAsync,
+  declineRequestAsync
+} from '../redux/slices/friendSlice';
+import { searchUsers, clearResults } from '../redux/slices/searchSlice';
+import debounce from 'lodash.debounce';
 
 function BetMates() {
-    const [betMates, setBetMates] = useState([]);
-    const [pendingRequests, setPendingRequests] = useState([]);
-    const [searchResults, setSearchResults] = useState([]);
     const [searchTerm, setSearchTerm] = useState('');
     const [requestSent, setRequestSent] = useState({});
-    const searchRef = useRef(null);  
-    const { user } = useAuth();
+    const searchRef = useRef(null);
 
-    useEffect(() => {
-        fetchBetMates();
-        fetchPendingRequests();
-        document.addEventListener('mousedown', handleClickOutside);
-        return () => document.removeEventListener('mousedown', handleClickOutside);
-    }, [user]);
+    const dispatch = useDispatch();
+  const { user } = useAuth();
 
-    const fetchBetMates = async () => {
-        if (!user) return;
-        try {
-            const response = await axios.get(`${API_ENDPOINTS.friends}/list/${user.userId}`, {
-                withCredentials: true
-            });
-            setBetMates(response.data.map(betMate => ({
-                id: betMate.id,
-                name: `${betMate.firstName} ${betMate.lastName}`,
-                username: betMate.username
-            })));
-        } catch (error) {
-            console.error('Failed to fetch betmates:', error);
-        }
-    };
+  const betMates = useSelector((state) => state.friends.betMates);
+  const pendingRequests = useSelector((state) => state.friends.pendingRequests);
 
-    const fetchPendingRequests = async () => {
-        if (!user) return;
-        try {
-            const response = await axios.get(`${API_ENDPOINTS.friends}/pendingRequests`, {
-                withCredentials: true
-            });
-            const filteredRequests = response.data.filter(
-                (request) => request.addresseeId === user.userId && request.status === 'pending'
-            );
-            setPendingRequests(filteredRequests);
-        } catch (error) {
-            console.error('Failed to fetch pending requests:', error);
-        }
-    };
-
+  const isLoading = useSelector((state) => state.ui.loading);
+  const searchResults = useSelector((state) => state.search.results);
     
-    const handleSearch = async (e) => {
-        setSearchTerm(e.target.value);
-        if (e.target.value.length >= 1) {
-            try {
-                const response = await axios.get(`${API_ENDPOINTS.users}/search`, {
-                    params: { query: e.target.value },
-                    withCredentials: true 
-                });
-                setSearchResults(response.data.map(user => ({
-                    id: user.id,
-                    name: `${user.firstName} ${user.lastName}`,
-                })));
-            } catch (error) {
-                console.error('Error fetching search results:', error);
-                setSearchResults([]);
-            }
-        } else {
-            setSearchResults([]);
-        }
+  
+  const debouncedSearch = React.useRef(
+    debounce((query) => {
+      dispatch(searchUsers(query));
+    }, 400)
+  ).current;
+
+  useEffect(() => {
+    if (user) {
+      dispatch(fetchBetMates(user.userId));
+      dispatch(fetchPendingRequests(user.userId));
+    }
+    document.addEventListener('mousedown', handleClickOutside);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      debouncedSearch.cancel();
     };
-    const addBetMate = async (addresseeId) => {
+  }, [user, dispatch, debouncedSearch]);
+
+  const handleSearch = (e) => {
+    const inputValue = e.target.value;
+    setSearchTerm(inputValue);
+    if (inputValue.length >= 1) {
+      debouncedSearch(inputValue);
+    } else {
+      dispatch(clearResults());
+    }
+  };
+
+    const handleSelectBetMate = (selectedUser) => {
+        setSearchTerm(`${selectedUser.firstName} ${selectedUser.lastName} (${selectedUser.username})`);
+        dispatch(clearResults());
+    };
+
+    const handleAddBetMate = (addresseeId) => {
+        if (!user) return;
         if (requestSent[addresseeId]) {
-            console.warn('Request already sent!');
-            return; 
+          console.warn('Request already sent!');
+          return;
         }
-        
-        try {
-            const requesterId = user.userId; 
-            const response = await axios.post(API_ENDPOINTS.friends + '/sendRequest', {
-                requesterId,
-                addresseeId
-            }, { withCredentials: true });
-            setRequestSent(prev => ({ ...prev, [addresseeId]: true }));
-            console.log('Request sent successfully:', response.data);
-        } catch (error) {
+        dispatch(addBetMateAsync({ requesterId: user.userId, addresseeId }))
+          .unwrap()
+          .then(() => {
+            setRequestSent((prev) => ({ ...prev, [addresseeId]: true }));
+            console.log('Request sent successfully');
+          })
+          .catch((error) => {
             console.error('Failed to send friend request:', error);
             alert('Failed to send friend request. Please try again.');
-        }
-    };
-    const removeBetmate = async (betMateId) => {
+          });
+      };
+
+      const handleRemoveBetMate = (betMateId) => {
         if (!user) return;
-        try {
-            await axios.delete(`${API_ENDPOINTS.friends}/removeBetmate/${betMateId}`, {
-                withCredentials: true
-            });
+        dispatch(removeBetMateAsync({ userId: user.userId, betMateId }))
+          .unwrap()
+          .then(() => {
             console.log('Friend removed successfully');
-            setBetMates(prev => prev.filter(betMate => betMate.id !== betMateId));
-        } catch (error) {
+          })
+          .catch((error) => {
             console.error('Failed to remove betmate:', error);
             alert('Failed to remove betmate. Please try again.');
-        }
-    };
-    const handleApproval = async (requestId) => {
-        try {
-            await axios.put(`${API_ENDPOINTS.friends}/acceptRequest/${requestId}`, {}, { withCredentials: true });
+          });
+      };
+
+      const handleApproval = (requestId) => {
+        if (!user) return;
+        dispatch(acceptRequestAsync({ requestId }))
+          .unwrap()
+          .then(() => {
             console.log('Approval successful');
-            fetchBetMates();
-            fetchPendingRequests();
-        } catch (error) {
+            // Refresh data
+            dispatch(fetchBetMates(user.userId));
+            dispatch(fetchPendingRequests(user.userId));
+          })
+          .catch((error) => {
             console.error('Failed to approve friend request:', error);
             alert('Failed to approve friend request. Please try again.');
-        }
-    };
+          });
+      };
     
-    const handleRejection = async (requestId) => {
-        try {
-            await axios.put(`${API_ENDPOINTS.friends}/declineRequest/${requestId}`, {}, { withCredentials: true });
+
+      const handleRejection = (requestId) => {
+        if (!user) return;
+        dispatch(declineRequestAsync({ requestId }))
+          .unwrap()
+          .then(() => {
             console.log('Rejection successful');
-    
-            fetchPendingRequests();
-        } catch (error) {
+            // Refresh data
+            dispatch(fetchPendingRequests(user.userId));
+          })
+          .catch((error) => {
             console.error('Failed to decline friend request:', error);
             alert('Failed to decline friend request. Please try again.');
-        }
-    };
+          });
+      };
 
+    
 
-    const handleClickOutside = (event) => {
+    
+      const handleClickOutside = (event) => {
         if (searchRef.current && !searchRef.current.contains(event.target)) {
-            setSearchResults([]);
+          dispatch(clearResults());
         }
-    };
+      };
 
     return (
         <div className="pt-20 lg:pl-64 px-8 bg-gray-100 min-h-screen">
             <div className="max-w-4xl mx-auto shadow-lg p-6 bg-white rounded-lg">
+            {isLoading && (
+          <div className="absolute top-0 left-0 w-full h-full flex items-center justify-center bg-black bg-opacity-50 z-50">
+            <div className="spinner-border text-white">
+              Loading...
+            </div>
+          </div>
+        )}
                 <div className="mb-6 text-left">
                     <h1 className="text-xl md:text-2xl font-bold text-gray-800 mb-3">Add Betmates</h1>
                     <input
@@ -154,8 +159,14 @@ function BetMates() {
                             <ul className="absolute w-72 mt-2 bg-white shadow-lg max-h-60 overflow-auto border border-gray-300 rounded-lg">
                                 {searchResults.map(addresseUser => (
                                     <li key={addresseUser.id} className="flex justify-between items-center p-3 hover:bg-gray-100">
-                                        <span>{addresseUser.name}</span>
-                                        <button onClick={() => addBetMate(addresseUser.id)} className="text-gray-500 hover:text-gray-700">
+                                        {/* <span>{addresseUser.name}</span> */}
+                                        <span
+                                            onClick={() => handleSelectBetMate(addresseUser)}
+                                            className="cursor-pointer"
+                                        >
+                                            {addresseUser.firstName} {addresseUser.lastName} ({addresseUser.username})
+                                        </span>
+                                        <button onClick={() => handleAddBetMate(addresseUser.id)} className="text-gray-500 hover:text-gray-700">
                                             {requestSent[addresseUser.id] ? <HiOutlineClock className="text-yellow-500 text-xl" /> : <HiOutlineUserAdd className="text-xl" />}
                                         </button>
                                     </li>
@@ -185,11 +196,14 @@ function BetMates() {
                     {betMates.map(betMate => (
                         <div key={betMate.id} className="flex items-center p-4 bg-gray-50 rounded-lg shadow">
                             <div className="flex-grow">
-                                <h5 className="font-semibold">{betMate.name}</h5>
+                                {/* <h5 className="font-semibold">{betMate.name}</h5> */}
+                                <h5 className="font-semibold">
+                                    {betMate.name} ({betMate.username})
+                                 </h5>
                             </div>
                             <div className="flex space-x-3">
                                 {/* <AiOutlineCheckCircle className="text-green-500" /> */}
-                                <button onClick={() => removeBetmate(betMate.id)} className="text-red-600 hover:text-red-800">
+                                <button onClick={() => handleRemoveBetMate(betMate.id)} className="text-red-600 hover:text-red-800">
                                     <FaUserMinus className="text-xl" />
                                 </button>
                             </div>

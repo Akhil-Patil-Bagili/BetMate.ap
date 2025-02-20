@@ -3,9 +3,26 @@ const prisma = new PrismaClient();
 
 exports.userSearch = async (req, res) => {
     const { query } = req.query;
+    const currentUserId = req.user.userId;
+    const existingFriends = await prisma.friendRequest.findMany({
+        where: {
+          OR: [
+            { requesterId: currentUserId, status: 'accepted' },
+            { addresseeId: currentUserId, status: 'accepted' }
+          ]
+        },
+        select: {
+          requesterId: true,
+          addresseeId: true
+        }
+      });
+      const friendIds = existingFriends.flatMap(fr => [fr.requesterId, fr.addresseeId]);
     try {
         const users = await prisma.user.findMany({
             where: {
+                id: {
+                    notIn: [...friendIds, currentUserId],
+                  },
                 OR: [
                     { username: { contains: query, mode: 'insensitive' } },
                     { firstName: { contains: query, mode: 'insensitive' } },
@@ -29,7 +46,7 @@ exports.userSearch = async (req, res) => {
 
 exports.getUserById = async (req, res) => {
     const { userId } = req.params;
-    const { betmateId } = req.query; // Get betmateId from the query parameters
+    const { betmateId } = req.query; 
 
     try {
         const betmateScore = await prisma.matchBetmate.findFirst({
